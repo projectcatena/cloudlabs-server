@@ -104,7 +104,7 @@ public class ComputeEngine {
         // *   For details about images you can mount, see https://cloud.google.com/compute/docs/images
         // diskSizeGb: storage size of the boot disk to attach to the instance.
         // networkName: network interface to associate with the instance.
-        String machineType = String.format("zones/%s/machineTypes/e2-micro", zone);
+        String machineType = String.format("zones/asia-southeast1-b/machineTypes/%s", payload.get("instanceType").asText());
         String sourceImage = String
             .format("projects/debian-cloud/global/images/family/%s", payload.get("image").asText());
         long diskSizeGb = 10L;
@@ -161,11 +161,11 @@ public class ComputeEngine {
 
             if (response.hasError()) {
                 System.out.println("Instance creation failed ! ! " + response);
-                return "error";
+                return "{ \"status\": \"error\" }";
             }
             System.out.println("Operation Status: " + response.getStatus());
 
-            return "success";
+            return "{ \"status\": \"status\" }";
         }
     }
 }
