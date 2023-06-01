@@ -17,16 +17,21 @@ import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
 import com.google.cloud.compute.v1.InstancesClient;
+import com.google.cloud.compute.v1.Items;
+import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
+import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 
 @RestController
 @RequestMapping("/compute")
 public class ComputeEngine {
 	// https://cloud.google.com/compute/docs/api/libraries
 	static String project = "cloudlabs-387310";
-	static String zone = "asia-southeast1-b"; // Region: asia-southeast1 (Singapore)
+	static String zone = "asia-southeast1-b"; 
 	static String region = "asia-southeast1";
 
 	// Create a new instance with the provided "instanceName" value in the specified
@@ -79,11 +84,28 @@ public class ComputeEngine {
                     .setName(networkName)
 					.build();
 
+            // Startup script for the instance
+            Items items = Items.newBuilder()
+                    .setKey("startup-script-url")
+                    .setValue("gs://crowded_intermission/startup.sh") // Authenticated or gsutil URL
+                    .build();
+
+            Metadata metadata = Metadata.newBuilder()
+                    .addItems(items)
+                    .build();
+
+            ServiceAccount serviceAccount = ServiceAccount.newBuilder()
+                    .setEmail("default")
+                    .addScopes("https://www.googleapis.com/auth/devstorage.read_only")
+                    .build();
+
 			// Bind `instanceName`, `machineType`, `disk`, and `networkInterface` to an
 			// instance.
 			Instance instanceResource = Instance.newBuilder()
 					.setName(instanceName)
 					.setMachineType(machineType)
+                    .setMetadata(metadata)
+                    .addServiceAccounts(serviceAccount)
 					.addDisks(disk)
 					.addNetworkInterfaces(networkInterface)
 					.build();
@@ -120,15 +142,15 @@ public class ComputeEngine {
              */
             // Reserve Public IP Address for the instance
             String addressResourceName = String.format("%s-public-ip", instanceName);
-			String publicIPAddressResposne = ComputeHelper.reserveStaticExternalIPAddress(project, region, addressResourceName);
+			String publicIPAddressResposne = AddressHelper.reserveStaticExternalIPAddress(project, region, addressResourceName);
 			System.out.println(publicIPAddressResposne);
 
             // Get value of newly created external IP address
-            String publicIPAddress = ComputeHelper.getExternalStaticIPAdress(project, region, addressResourceName);
+            String publicIPAddress = AddressHelper.getExternalStaticIPAdress(project, region, addressResourceName);
             System.out.println(publicIPAddress);
 
             // Attach the Public IP Address to the instance's default network interface: nic0
-            String attachPublicIPAddressResponse = ComputeHelper.assignStaticExternalIPAddress(project, zone, instanceName, publicIPAddress, "nic0");
+            String attachPublicIPAddressResponse = AddressHelper.assignStaticExternalIPAddress(project, zone, instanceName, publicIPAddress, "nic0");
             System.out.println(attachPublicIPAddressResponse);
 
 			return "{ \"status\": \"success\" }";

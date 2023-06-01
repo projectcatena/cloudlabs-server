@@ -11,9 +11,9 @@ import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.compute.v1.Operation;
 
-public class ComputeHelper {
+public final class AddressHelper {
 	
-    public static String reserveStaticExternalIPAddress(String project, String region, String ipAddressName) {
+    public static final String reserveStaticExternalIPAddress(String project, String region, String ipAddressName) {
         try (AddressesClient addressClient = AddressesClient.create()) {
 
             Address addressResource = Address.newBuilder()
