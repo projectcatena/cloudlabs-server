@@ -34,10 +34,10 @@ public class ComputeEngine {
 	static String zone = "asia-southeast1-b"; 
 	static String region = "asia-southeast1";
 
-	// Create a new instance with the provided "instanceName" value in the specified
+	// Create a new public instance with the provided "instanceName" value in the specified
 	// project and zone.
 	@PostMapping("/create")
-	public static String createInstance(@RequestBody JsonNode request)
+	public static String createPublicInstance(@RequestBody JsonNode request)
 			throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
 		// Initialize client that will be used to send requests. This client only needs
