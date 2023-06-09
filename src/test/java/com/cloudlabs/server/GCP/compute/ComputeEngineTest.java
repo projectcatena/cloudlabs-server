@@ -48,6 +48,7 @@ public class ComputeEngineTest {
             .contentType(MediaType.APPLICATION_JSON).content("""
                     {
                         \"name\": \"test\",
+                        \"script\": \"\",
                         \"selectedImage\": {
                             \"name\": \"debian-11\",
                             \"project\": \"projects/debian-cloud/global/images/family/\"

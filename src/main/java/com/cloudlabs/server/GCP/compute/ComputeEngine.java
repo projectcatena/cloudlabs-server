@@ -65,6 +65,7 @@ public class ComputeEngine {
 			long diskSizeGb = 10L;
 			String networkName = "default";
 			String instanceName = request.get("name").asText();
+			String startupScript = request.get("script").asText();
 
 			// Instance creation requires at least one persistent disk and one network
 			// interface.
@@ -85,28 +86,28 @@ public class ComputeEngine {
                     .setName(networkName)
 					.build();
 
-            // Startup script for the instance
-            Items items = Items.newBuilder()
-                    .setKey("startup-script-url")
-                    .setValue("gs://crowded_intermission/startup.sh") // Authenticated or gsutil URL
-                    .build();
-
-            Metadata metadata = Metadata.newBuilder()
-                    .addItems(items)
-                    .build();
-
             ServiceAccount serviceAccount = ServiceAccount.newBuilder()
                     .setEmail("default")
                     .addScopes("https://www.googleapis.com/auth/devstorage.read_only")
                     .build();
+
+			// Startup script for the instance
+			Items items = Items.newBuilder()
+					.setKey("startup-script")
+					.setValue(startupScript) // Authenticated or gsutil URL
+					.build();
+
+			Metadata metadata = Metadata.newBuilder()
+					.addItems(items)
+					.build();
 
 			// Bind `instanceName`, `machineType`, `disk`, and `networkInterface` to an
 			// instance.
 			Instance instanceResource = Instance.newBuilder()
 					.setName(instanceName)
 					.setMachineType(machineType)
-                    .setMetadata(metadata)
-                    .addServiceAccounts(serviceAccount)
+					.setMetadata(metadata)
+					.addServiceAccounts(serviceAccount)
 					.addDisks(disk)
 					.addNetworkInterfaces(networkInterface)
 					.build();
