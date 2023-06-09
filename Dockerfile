@@ -10,7 +10,8 @@ COPY src src
 RUN sed -i 's/\r$//' ./mvnw
 # Set executable permission
 RUN chmod +x ./mvnw
-RUN ./mvnw install -DskipTests
+# RUN ./mvnw install -DskipTests
+RUN ./mvnw install
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
 FROM eclipse-temurin:17-jdk-alpine

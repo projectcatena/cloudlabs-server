@@ -5,10 +5,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.api.gax.longrunning.OperationFuture;
@@ -23,8 +25,6 @@ import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 
 @RestController
 @RequestMapping("/compute")
@@ -39,24 +39,6 @@ public class ComputeEngine {
 	@PostMapping("/create")
 	public static String createInstance(@RequestBody JsonNode request)
 			throws IOException, InterruptedException, ExecutionException, TimeoutException {
-		// Below are sample values that can be replaced.
-		// machineType: machine type of the VM being created.
-		// * This value uses the format zones/{zone}/machineTypes/{type_name}.
-		// * For a list of machine types, see
-		// https://cloud.google.com/compute/docs/machine-types
-		// sourceImage: path to the operating system image to mount.
-		// * For details about images you can mount, see
-		// https://cloud.google.com/compute/docs/images
-		// diskSizeGb: storage size of the boot disk to attach to the instance.
-		// networkName: network interface to associate with the instance.
-		String machineType = String.format("zones/asia-southeast1-b/machineTypes/%s",
-				request.get("selectedInstanceType").get("name").asText());
-		String sourceImage = String
-				.format("%s%s", request.get("selectedImage").get("project").asText(),
-						request.get("selectedImage").get("name").asText());
-		long diskSizeGb = 10L;
-		String networkName = "default";
-		String instanceName = request.get("name").asText();
 
 		// Initialize client that will be used to send requests. This client only needs
 		// to be created
@@ -65,6 +47,25 @@ public class ComputeEngine {
 		// the `instancesClient.close()` method on the client to safely
 		// clean up any remaining background resources.
 		try (InstancesClient instancesClient = InstancesClient.create()) {
+			// Below are sample values that can be replaced.
+			// machineType: machine type of the VM being created.
+			// * This value uses the format zones/{zone}/machineTypes/{type_name}.
+			// * For a list of machine types, see
+			// https://cloud.google.com/compute/docs/machine-types
+			// sourceImage: path to the operating system image to mount.
+			// * For details about images you can mount, see
+			// https://cloud.google.com/compute/docs/images
+			// diskSizeGb: storage size of the boot disk to attach to the instance.
+			// networkName: network interface to associate with the instance.
+			String machineType = String.format("zones/asia-southeast1-b/machineTypes/%s",
+					request.get("selectedInstanceType").get("name").asText());
+			String sourceImage = String
+					.format("%s%s", request.get("selectedImage").get("project").asText(),
+							request.get("selectedImage").get("name").asText());
+			long diskSizeGb = 10L;
+			String networkName = "default";
+			String instanceName = request.get("name").asText();
+
 			// Instance creation requires at least one persistent disk and one network
 			// interface.
 			AttachedDisk disk = AttachedDisk.newBuilder()
@@ -154,6 +155,11 @@ public class ComputeEngine {
             System.out.println(attachPublicIPAddressResponse);
 
 			return "{ \"status\": \"success\" }";
+		} catch (IllegalArgumentException illegalArgumentException) {
+			// Should implement custom exception handler, as "server.error.include-message=always" 
+			// workaround may disclose sensitive internal exceptions
+			// Source: https://stackoverflow.com/questions/62561211/spring-responsestatusexception-does-not-return-reason
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Illegal parameters.");
 		}
 	}
 }

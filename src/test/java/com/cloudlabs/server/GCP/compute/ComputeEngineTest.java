@@ -10,13 +10,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-public class AddressHelperTest {
+public class ComputeEngineTest {
 
     @Autowired
     protected MockMvc mockMvc;
@@ -31,17 +30,23 @@ public class AddressHelperTest {
     //     dynamicPropertyRegistry.add("gcp_base_url", wireMockServer::baseUrl);
     // }
 
+    /**
+     * Simulates a user input collected from front-end to create and launch a compute instance.
+     * MockServer will response with success, when instance is created and launched.
+     * 
+     * @throws Exception
+     */
     @Test
-    void reserveStaticExternalIPAddress_whenParametersGiven() throws Exception {
-        wireMockServer.stubFor(WireMock.post(WireMock.urlEqualTo("/compute/create"))
-            .willReturn(WireMock.aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", MediaType.APPLICATION_PROBLEM_JSON_VALUE)
-            .withBody("""
-            {
-                \"status\": \"success\",
-            }
-            """)));
+    void createComputeEngine_whenParametersGiven() throws Exception {
+        // wireMockServer.stubFor(WireMock.post(WireMock.urlEqualTo("/compute/create"))
+        //     .willReturn(WireMock.aResponse()
+        //     .withStatus(200)
+        //     .withHeader("Content-Type", MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        //     .withBody("""
+        //     {
+        //         \"status\": \"success\",
+        //     }
+        //     """)));
 
         this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
             .contentType(MediaType.APPLICATION_JSON).content("""
@@ -57,5 +62,16 @@ public class AddressHelperTest {
                     }
                     """))
             .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void failCreateComputeEngine_whenParametersNotGiven() throws Exception {
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
+            .contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+
+                    }
+                    """))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 }
