@@ -30,9 +30,7 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
 
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
-
+    # Output: /home/runner/work/cloudlabs-server/cloudlabs-server/gha-creds-0b7f7f2f0a11de34.json
     - name: 'Echo GCP Environment Variable'
       run: echo ${GOOGLE_APPLICATION_CREDENTIALS}
 
