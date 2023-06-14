@@ -1,6 +1,10 @@
 FROM eclipse-temurin:17-jdk-alpine as build
 WORKDIR /workspace/app
 
+# Set Environment Variables
+ARG GOOGLE_APPLICATION_CREDENTIALS
+ENV GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS
+
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .

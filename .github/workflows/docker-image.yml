@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "staging" ]
   pull_request:
     branches: [ "main", "staging" ]
 
@@ -14,5 +14,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: 'projects/678591755363/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+        service_account: 'github-actions-830@cloudlabs-387310.iam.gserviceaccount.com'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        version: '>= 363.0.0'
+
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      run: docker build . --file Dockerfile --build-arg var_name=${GOOGLE_APPLICATION_CREDENTIALS} --tag my-image-name:$(date +%s)
