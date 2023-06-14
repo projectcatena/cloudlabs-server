@@ -1,4 +1,4 @@
-package com.cloudlabs.server.GCP.compute;
+package com.cloudlabs.server.compute;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-public class ComputeEngineTest {
+public class ComputeControllerTests {
 
     @Autowired
     protected MockMvc mockMvc;
