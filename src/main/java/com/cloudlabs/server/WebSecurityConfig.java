@@ -3,6 +3,7 @@ package com.cloudlabs.server;
 import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
@@ -10,6 +11,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
@@ -19,7 +22,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 //@EnableWebSecurity
 @Component
+@EnableGlobalMethodSecurity(
+        prePostEnabled = true
+)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
+
+	public static final String AUTHORITIES_CLAIM_NAME = "roles";
 	
 	private final PasswordEncoder passwordEncoder;
 	
@@ -44,8 +52,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 								.permitAll()
 								.anyRequest()
 								.authenticated()
-				)
-				.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);
+				);
+		// JWT Validation Configuration
+        http.oauth2ResourceServer()
+                .jwt()
+                .jwtAuthenticationConverter(authenticationConverter());
 	}
 	
 	/* Real credentials take from database */
@@ -53,7 +64,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 	@Override
 	protected UserDetailsService userDetailsService() {
 		UserDetails user1 = org.springframework.security.core.userdetails.User
-				.withUsername("user")
+				.withUsername("user1")
 				.authorities("USER")
 				.passwordEncoder(passwordEncoder::encode)
 				.password("1234")
@@ -61,7 +72,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 		
 		UserDetails user2 = org.springframework.security.core.userdetails.User
 		.withUsername("user2")
-		.authorities("ADMIN")
+		.authorities("ADMIN", "USER")
+		.passwordEncoder(passwordEncoder::encode)
+		.password("1234")
+		.build();
+
+		UserDetails user3 = org.springframework.security.core.userdetails.User
+		.withUsername("user3")
+		.authorities("TUTOR", "USER")
 		.passwordEncoder(passwordEncoder::encode)
 		.password("1234")
 		.build();
@@ -69,6 +87,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 		InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
 		manager.createUser(user1);
 		manager.createUser(user2);
+		manager.createUser(user3);
 		return manager;
 	}
 	/*
@@ -103,4 +122,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
+	protected JwtAuthenticationConverter authenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthorityPrefix("");
+        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return converter;
+	}
 }
