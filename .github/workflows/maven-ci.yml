@@ -1,5 +1,5 @@
 
-name: Docker Image CI
+name: Maven CI
 
 on:
   push:
@@ -40,4 +40,4 @@ jobs:
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
     - name: Run Tests
-      run: mvn clean package
+      run: mvn clean install
