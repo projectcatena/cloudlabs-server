@@ -33,4 +33,4 @@ jobs:
         version: '>= 363.0.0'
 
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --build-arg var_name=${GOOGLE_APPLICATION_CREDENTIALS} --tag my-image-name:$(date +%s)
+      run: docker build . --file Dockerfile --build-arg GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} --tag my-image-name:$(date +%s)
