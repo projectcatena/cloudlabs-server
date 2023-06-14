@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.cloudlabs.server.WebSecurityConfig;
 import com.cloudlabs.server.Security.JwtHelper;
 import com.cloudlabs.server.controller.resource.LoginResult;
 
@@ -56,8 +57,8 @@ public class AuthController {
 			
 			String authorities = userDetails.getAuthorities().stream()
 					.map(GrantedAuthority::getAuthority)
-					.collect(Collectors.joining(","));
-			claims.put("authorities", authorities);
+					.collect(Collectors.joining(" "));
+			claims.put(WebSecurityConfig.AUTHORITIES_CLAIM_NAME, authorities);
 			claims.put("userId", String.valueOf(1));
 			
 			String jwt = jwtHelper.createJwtForClaims(username, claims);
