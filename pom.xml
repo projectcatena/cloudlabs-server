@@ -16,6 +16,19 @@
     <properties>
         <java.version>17</java.version>
     </properties>
+    <!--  Using libraries-bom to manage versions.
+    See https://github.com/GoogleCloudPlatform/cloud-opensource-java/wiki/The-Google-Cloud-Platform-Libraries-BOM -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>4.4.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -45,7 +58,13 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>        
-        
+
+        <!-- GCP Cloud Storage -->
+        <dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>spring-cloud-gcp-starter-storage</artifactId>
+		</dependency>
+
         <!-- Servlet API -->
         <dependency>
             <groupId>javax.servlet</groupId>
