@@ -1,4 +1,4 @@
-package com.cloudlabs.server.controller.resource;
+package com.cloudlabs.server.Security.resource;
 
 import lombok.Data;
 import lombok.NonNull;

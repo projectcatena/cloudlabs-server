@@ -1,4 +1,4 @@
-package com.cloudlabs.server.controller;
+package com.cloudlabs.server.Security;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudlabs.server.WebSecurityConfig;
-import com.cloudlabs.server.Security.JwtHelper;
-import com.cloudlabs.server.controller.resource.LoginResult;
+import com.cloudlabs.server.Security.resource.LoginResult;
 
 /**
  * The auth controller to handle login requests

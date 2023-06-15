@@ -1,4 +1,4 @@
-package com.cloudlabs.server.controller;
+package com.cloudlabs.server.User;
 
 import java.util.Map;
 
