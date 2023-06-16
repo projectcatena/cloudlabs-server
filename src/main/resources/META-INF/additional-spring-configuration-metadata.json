@@ -1,0 +1,12 @@
+{"properties": [
+  {
+    "name": "gcp.bucket.name",
+    "type": "java.lang.String",
+    "description": "The name of a GCP Cloud Storage Bucket"
+  },
+  {
+    "name": "gcp.project.id",
+    "type": "java.lang.String",
+    "description": "The ID of a GCP Project"
+  }
+]}
