@@ -3,13 +3,13 @@ package com.cloudlabs.server.file;
 import java.net.URL;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/storage")
@@ -20,16 +20,27 @@ public class FileController {
 
     //Upload file
     @PostMapping("/signed")
-    public ResponseEntity<String> generatev4PutObjectSignedUrl(@RequestBody JsonNode request) {
-        String objectName = request.get("objectName").asText();
+    public ResponseEntity<FileDTO> generatev4PutObjectSignedUrl(@RequestBody FileDTO file) {
+        String objectName = file.getObjectName();
+        // String fileExtension = FileHelper.getFileExtension(objectName);
+
+        // if (fileExtension == null || (!fileExtension.equalsIgnoreCase("vmdk") && !fileExtension.equalsIgnoreCase("vhd"))) {
+        //     throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        // }
 
         URL signedUploadURL = fileService.generateV4PutObjectSignedUrl(objectName);
 
-        return ResponseEntity.ok(String.format("""
-                {
-                    \"status\":\"success\",
-                    \"signedURL\":\"%s\"
-                }
-                """, signedUploadURL.toString()));
+        if (signedUploadURL == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        // return ResponseEntity.ok(String.format("""
+        //         {
+        //             \"status\":\"success\",
+        //             \"signedURL\":\"%s\"
+        //         }
+        //         """, signedUploadURL.toString()));
+        file.setSignedURL(signedUploadURL.toString());
+        return ResponseEntity.ok().body(file);
     }
 }

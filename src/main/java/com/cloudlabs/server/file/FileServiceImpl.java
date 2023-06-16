@@ -37,6 +37,16 @@ public class FileServiceImpl implements FileService {
      * Basically, just download service account private key from GCP, and put it in env variable.
      */
     public URL generateV4PutObjectSignedUrl(String objectName) throws StorageException {
+        if (objectName == null) {
+            return null;
+        }
+
+        String fileExtension = FileHelper.getFileExtension(objectName);
+
+        if (fileExtension == null || (!fileExtension.equalsIgnoreCase("vmdk") && !fileExtension.equalsIgnoreCase("vhd"))) {
+            return null;
+        }
+
         Storage storage = StorageOptions.newBuilder()
             .setProjectId(projectId)
             .build()
