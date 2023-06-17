@@ -1,6 +1,8 @@
 package com.cloudlabs.server.file;
 
+import java.io.IOException;
 import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.google.cloudbuild.v1.Build;
 
 @RestController
 @RequestMapping("/storage")
@@ -34,13 +38,22 @@ public class FileController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
-        // return ResponseEntity.ok(String.format("""
-        //         {
-        //             \"status\":\"success\",
-        //             \"signedURL\":\"%s\"
-        //         }
-        //         """, signedUploadURL.toString()));
         file.setSignedURL(signedUploadURL.toString());
         return ResponseEntity.ok().body(file);
+    }
+
+    @PostMapping("/start")
+    public FileDTO startVirtualDiskBuild(@RequestBody FileDTO file) throws InterruptedException, ExecutionException, IOException {
+        
+        Build response = fileService.startVirtualDiskBuild(file.getObjectName(), file.getImageName());
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        file.setBuildId(response.getId());
+        file.setBuildStatus(response.getStatus().name());
+
+        return file;
     }
 }

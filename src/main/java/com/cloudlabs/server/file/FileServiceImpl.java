@@ -1,19 +1,28 @@
 package com.cloudlabs.server.file;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.google.api.gax.longrunning.OperationFuture;
+import com.google.cloud.devtools.cloudbuild.v1.CloudBuildClient;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.HttpMethod;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
+import com.google.cloudbuild.v1.Build;
+import com.google.cloudbuild.v1.BuildOperationMetadata;
+import com.google.cloudbuild.v1.BuildStep;
+import com.google.cloudbuild.v1.CreateBuildRequest;
 
 @Service
 public class FileServiceImpl implements FileService {
@@ -68,13 +77,80 @@ public class FileServiceImpl implements FileService {
                 Storage.SignUrlOption.withExtHeaders(extensionHeaders),
                 Storage.SignUrlOption.withV4Signature());
 
-        // System.out.println("Generated PUT signed URL:");
-        // System.out.println(url);
-        // System.out.println("You can use this URL with any user agent, for example:");
-        // System.out.println(
-        //     "curl -X PUT -H 'Content-Type: application/octet-stream' --upload-file my-file '"
-        //         + url
-        //         + "'");
         return url;
     }
+
+    @Override
+    public Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException {
+
+        if (objectName == null || imageName == null) {
+            return null;
+        }
+
+        // Follow GCP image name requirements: 
+        // https://cloud.google.com/compute/docs/reference/rest/v1/images
+        if (!imageName.matches("[a-z]([-a-z0-9]*[a-z0-9])?")) {
+            return null;
+        }
+
+        boolean isBlobExist = checkBlobExist(objectName);
+
+        if (!isBlobExist) {
+            return null;
+        }
+
+        try (CloudBuildClient cloudBuildClient = CloudBuildClient.create()) {
+            BuildStep buildStep = BuildStep.newBuilder()
+                .addArgs(String.format("-image_name=%s", imageName))
+                .addArgs(String.format("-source_file=%s", String.format("gs://%s/%s", bucketName, objectName)))
+                .addArgs("-timeout=7000s")
+                .addArgs("-client_id=api")
+                .setName("gcr.io/compute-image-tools/gce_vm_image_import:release")
+                .addEnv("BUILD_ID=$BUILD_ID")
+                .build();
+
+            com.google.protobuf.Duration duration = com.google.protobuf.Duration.newBuilder()
+                .setSeconds(7200)
+                .build();
+
+            Build build = Build.newBuilder()
+                .addSteps(0, buildStep)
+                .setTimeout(duration)
+                .addTags("gce-daisy")
+                .addTags("gce-daisy-image-import")
+                .build();
+
+            CreateBuildRequest createBuildRequest = CreateBuildRequest.newBuilder()
+                .setBuild(build)
+                .setProjectId(projectId)
+                .build();
+            
+            OperationFuture<Build, BuildOperationMetadata> operation = cloudBuildClient.createBuildAsync(createBuildRequest);
+
+            // Get the ongoing build without waiting for the whole build to complete,
+            // which will take approx. 30 minutes
+            Build ongoingBuild = operation.getMetadata().get().getBuild();
+
+            return ongoingBuild;
+        }
+    }
+
+    /**
+     * Check if blob exists on a specific GCP Bucket
+     * 
+     * @param blobName
+     */
+    @Override
+    public Boolean checkBlobExist(String blobName) {
+        Storage storage = StorageOptions.getDefaultInstance().getService();
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        Blob blob = storage.get(blobId);
+
+        if (blob == null) {
+            return false;
+        }
+
+        return true;
+    }
+    
 }
