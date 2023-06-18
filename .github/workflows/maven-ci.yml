@@ -25,8 +25,8 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
       with:
-        workload_identity_provider: 'projects/678591755363/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-        service_account: 'github-actions-830@cloudlabs-387310.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
@@ -42,6 +42,9 @@ jobs:
     - name: Run Tests
       run: mvn clean install
       env:
-        GCP_BUCKET_NAME: ${{ vars.GCP_BUCKET_NAME }}
-        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
+
+
 
