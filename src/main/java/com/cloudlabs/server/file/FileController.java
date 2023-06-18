@@ -26,11 +26,6 @@ public class FileController {
     @PostMapping("/signed")
     public ResponseEntity<FileDTO> generatev4PutObjectSignedUrl(@RequestBody FileDTO file) {
         String objectName = file.getObjectName();
-        // String fileExtension = FileHelper.getFileExtension(objectName);
-
-        // if (fileExtension == null || (!fileExtension.equalsIgnoreCase("vmdk") && !fileExtension.equalsIgnoreCase("vhd"))) {
-        //     throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        // }
 
         URL signedUploadURL = fileService.generateV4PutObjectSignedUrl(objectName);
 

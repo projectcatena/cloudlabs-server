@@ -17,14 +17,12 @@ import com.google.auth.Credentials;
 import com.google.auth.ServiceAccountSigner;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ImpersonatedCredentials;
-import com.google.auth.oauth2.UserCredentials;
 import com.google.cloud.devtools.cloudbuild.v1.CloudBuildClient;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.HttpMethod;
 import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloudbuild.v1.Build;
 import com.google.cloudbuild.v1.BuildOperationMetadata;
@@ -53,10 +51,10 @@ public class FileServiceImpl implements FileService {
      * credentials are defined via the environment variable GOOGLE_APPLICATION_CREDENTIALS, and those
      * credentials are authorized to sign a URL. See the documentation for Storage.signUrl for more
      * details.
+     * @throws IOException
      * 
-     * Basically, just download service account private key from GCP, and put it in env variable.
      */
-    public URL generateV4PutObjectSignedUrl(String objectName) throws StorageException {
+    public URL generateV4PutObjectSignedUrl(String objectName) {
         if (objectName == null) {
             return null;
         }
@@ -75,22 +73,25 @@ public class FileServiceImpl implements FileService {
         // Define Resource
         BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, objectName)).build();
         
-        // Get service acccount credentials for signing
+        /** 
+         * Get service acccount credentials for signing
+         * 
+         * https://stackoverflow.com/questions/64811461/gcp-storage-signing-key-not-provided 
+         * https://stackoverflow.com/questions/57564505/unable-to-assign-iam-serviceaccounts-signblob-permission
+         */
         Credentials credentials = storage.getOptions().getCredentials();
 
         List<String> scopes = new ArrayList<String>();
 
         scopes.add("https://www.googleapis.com/auth/iam");
         
-        if (credentials instanceof UserCredentials) {
-            credentials = ImpersonatedCredentials.create(
-                (GoogleCredentials) credentials,
-                serviceAccount,
-                new ArrayList<String>(),
-                scopes,
-                3600
-            );
-        }
+        credentials = ImpersonatedCredentials.create(
+            (GoogleCredentials) credentials,
+            serviceAccount,
+            new ArrayList<String>(),
+            scopes,
+            3600
+        );
 
         // Generate Signed URL
         Map<String, String> extensionHeaders = new HashMap<>();
