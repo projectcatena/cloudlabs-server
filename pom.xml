@@ -16,6 +16,7 @@
     <properties>
         <java.version>17</java.version>
     </properties>
+
     <!--  Using libraries-bom to manage versions.
     See https://github.com/GoogleCloudPlatform/cloud-opensource-java/wiki/The-Google-Cloud-Platform-Libraries-BOM -->
     <dependencyManagement>
@@ -27,8 +28,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+             <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>libraries-bom</artifactId>
+                <version>26.12.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -86,6 +95,29 @@
             <artifactId>guacamole-common</artifactId>
             <version>1.5.1</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- GCP Compute -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-compute</artifactId>
+        </dependency>
+
+        <!-- JSON Serialization of Object -->
+        <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!-- Testing -->
+        <!-- https://mvnrepository.com/artifact/com.github.tomakehurst/wiremock -->
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <version>2.35.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
