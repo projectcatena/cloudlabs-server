@@ -25,8 +25,8 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
       with:
-        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }} # 'my-service-account@my-project.iam.gserviceaccount.com'
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
@@ -44,6 +44,7 @@ jobs:
       env:
         GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GCP_SIGNING_SERVICE_ACCOUNT: ${{ secrets.GCP_SIGNING_SERVICE_ACCOUNT }}
 
 
 

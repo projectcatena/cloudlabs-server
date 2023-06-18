@@ -2,7 +2,9 @@ package com.cloudlabs.server.file;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.api.gax.longrunning.OperationFuture;
+import com.google.auth.Credentials;
+import com.google.auth.ServiceAccountSigner;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ImpersonatedCredentials;
+import com.google.auth.oauth2.UserCredentials;
 import com.google.cloud.devtools.cloudbuild.v1.CloudBuildClient;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -33,6 +40,9 @@ public class FileServiceImpl implements FileService {
 
     @Value("${gcp.project.id}")
     private String projectId;
+
+    @Value("${gcp.signing.service.account}")
+    private String serviceAccount;
 
     /**
      * Signing a URL requires Credentials which implement ServiceAccountSigner. These can be set
@@ -64,6 +74,23 @@ public class FileServiceImpl implements FileService {
 
         // Define Resource
         BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, objectName)).build();
+        
+        // Get service acccount credentials for signing
+        Credentials credentials = storage.getOptions().getCredentials();
+
+        List<String> scopes = new ArrayList<String>();
+
+        scopes.add("https://www.googleapis.com/auth/iam");
+        
+        if (credentials instanceof UserCredentials) {
+            credentials = ImpersonatedCredentials.create(
+                (GoogleCredentials) credentials,
+                serviceAccount,
+                new ArrayList<String>(),
+                scopes,
+                3600
+            );
+        }
 
         // Generate Signed URL
         Map<String, String> extensionHeaders = new HashMap<>();
@@ -76,7 +103,8 @@ public class FileServiceImpl implements FileService {
                 TimeUnit.MINUTES,
                 Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
                 Storage.SignUrlOption.withExtHeaders(extensionHeaders),
-                Storage.SignUrlOption.withV4Signature());
+                Storage.SignUrlOption.withV4Signature(),
+                Storage.SignUrlOption.signWith((ServiceAccountSigner) credentials));
 
         return url;
     }
