@@ -41,3 +41,7 @@ jobs:
 
     - name: Run Tests
       run: mvn clean install
+      env:
+        GCP_BUCKET_NAME: ${{ vars.GCP_BUCKET_NAME }}
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
