@@ -1,22 +1,22 @@
 package com.cloudlabs.server.file;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.charset.Charset;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloudbuild.v1.Build;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -27,7 +27,7 @@ public class FileControllerTests {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Mock
+    @Autowired
     private FileService fileService;
 
     @Test
@@ -100,12 +100,20 @@ public class FileControllerTests {
         file.setImageName("windows-server-2019");
 
         String jsonString = objectMapper.writeValueAsString(file);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/storage/start")
+        MvcResult response = mockMvc.perform(MockMvcRequestBuilders.post("/storage/start")
                 .contentType(MediaType.APPLICATION_JSON).content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.objectName").value(file.getObjectName()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.imageName").value(file.getImageName()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus").value("QUEUED"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.buildId").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus").value("QUEUED"))
+                .andReturn();
+        
+        // After launching a build, should cancel it to prevent unnecessary costly builds.
+        FileDTO responseFile = objectMapper.readValue(response.getResponse().getContentAsString(), FileDTO.class);
+        Build cancelBuildResponse = fileService.cancelVirtualDiskBUild(responseFile.getBuildId());
+
+        assertNotNull(cancelBuildResponse);
     } 
 
     @Test

@@ -56,4 +56,17 @@ public class FileController {
 
         return file;
     }
+
+    @PostMapping("/cancel")
+    public FileDTO cancelVirtualDiskBuild(@RequestBody FileDTO file) throws IOException {
+        Build response = fileService.cancelVirtualDiskBUild(file.getBuildId());
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        file.setBuildStatus(response.getStatus().name());
+
+        return file;
+    }
 }

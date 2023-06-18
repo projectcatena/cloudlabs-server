@@ -8,6 +8,7 @@ import com.google.cloudbuild.v1.Build;
 
 public interface FileService {
     URL generateV4PutObjectSignedUrl(String objectName);
-    Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException;
     Boolean checkBlobExist(String blobName);
+    Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException;
+    Build cancelVirtualDiskBUild(String buildId) throws IOException;
 }

@@ -22,6 +22,7 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.cloudbuild.v1.Build;
 import com.google.cloudbuild.v1.BuildOperationMetadata;
 import com.google.cloudbuild.v1.BuildStep;
+import com.google.cloudbuild.v1.CancelBuildRequest;
 import com.google.cloudbuild.v1.CreateBuildRequest;
 
 @Service
@@ -80,6 +81,24 @@ public class FileServiceImpl implements FileService {
         return url;
     }
 
+    /**
+     * Check if blob exists on a specific GCP Bucket
+     * 
+     * @param blobName
+     */
+    @Override
+    public Boolean checkBlobExist(String blobName) {
+        Storage storage = StorageOptions.getDefaultInstance().getService();
+        BlobId blobId = BlobId.of(bucketName, blobName);
+        Blob blob = storage.get(blobId);
+
+        if (blob == null) {
+            return false;
+        }
+
+        return true;
+    }
+
     @Override
     public Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException {
 
@@ -135,22 +154,24 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    /**
-     * Check if blob exists on a specific GCP Bucket
-     * 
-     * @param blobName
-     */
     @Override
-    public Boolean checkBlobExist(String blobName) {
-        Storage storage = StorageOptions.getDefaultInstance().getService();
-        BlobId blobId = BlobId.of(bucketName, blobName);
-        Blob blob = storage.get(blobId);
+    public Build cancelVirtualDiskBUild(String buildId) throws IOException {
 
-        if (blob == null) {
-            return false;
+        if (buildId == null) {
+            return null;
         }
 
-        return true;
+        try (CloudBuildClient cloudBuildClient = CloudBuildClient.create()) {
+            CancelBuildRequest cancelBuildRequest = CancelBuildRequest.newBuilder()
+                .setProjectId(projectId)
+                .setId(buildId)
+                .build();
+
+           Build response = cloudBuildClient.cancelBuild(cancelBuildRequest);
+
+           return response;
+        }
+
     }
     
 }
