@@ -1,4 +1,4 @@
-package com.cloudlabs.server.file;
+package com.cloudlabs.server.image;
 
 import java.io.IOException;
 import java.net.URL;
@@ -31,7 +31,7 @@ import com.google.cloudbuild.v1.CancelBuildRequest;
 import com.google.cloudbuild.v1.CreateBuildRequest;
 
 @Service
-public class FileServiceImpl implements FileService {
+public class ImageServiceImpl implements ImageService {
 
     @Value("${gcp.bucket.name}")
     private String bucketName;
@@ -59,7 +59,7 @@ public class FileServiceImpl implements FileService {
             return null;
         }
 
-        String fileExtension = FileHelper.getFileExtension(objectName);
+        String fileExtension = ImageHelper.getFileExtension(objectName);
 
         if (fileExtension == null || (!fileExtension.equalsIgnoreCase("vmdk") && !fileExtension.equalsIgnoreCase("vhd"))) {
             return null;

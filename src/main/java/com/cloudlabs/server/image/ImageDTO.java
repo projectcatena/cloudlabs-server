@@ -1,17 +1,17 @@
-package com.cloudlabs.server.file;
+package com.cloudlabs.server.image;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
-public class FileDTO {
+public class ImageDTO {
     private String objectName;
     private String imageName;
     private String signedURL;
     private String buildStatus;
     private String buildId;
 
-    public FileDTO() {}
+    public ImageDTO() {}
 
     public String getBuildStatus() {
         return this.buildStatus;

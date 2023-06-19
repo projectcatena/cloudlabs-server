@@ -1,4 +1,4 @@
-package com.cloudlabs.server.file;
+package com.cloudlabs.server.image;
 
 import java.io.IOException;
 import java.net.URL;
@@ -16,52 +16,52 @@ import org.springframework.web.server.ResponseStatusException;
 import com.google.cloudbuild.v1.Build;
 
 @RestController
-@RequestMapping("/storage")
-public class FileController {
+@RequestMapping("/image")
+public class ImageController {
 
     @Autowired
-    FileService fileService;
+    ImageService imageService;
 
-    //Upload file
+    //Upload image
     @PostMapping("/signed")
-    public ResponseEntity<FileDTO> generatev4PutObjectSignedUrl(@RequestBody FileDTO file) {
-        String objectName = file.getObjectName();
+    public ResponseEntity<ImageDTO> generatev4PutObjectSignedUrl(@RequestBody ImageDTO image) {
+        String objectName = image.getObjectName();
 
-        URL signedUploadURL = fileService.generateV4PutObjectSignedUrl(objectName);
+        URL signedUploadURL = imageService.generateV4PutObjectSignedUrl(objectName);
 
         if (signedUploadURL == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
-        file.setSignedURL(signedUploadURL.toString());
-        return ResponseEntity.ok().body(file);
+        image.setSignedURL(signedUploadURL.toString());
+        return ResponseEntity.ok().body(image);
     }
 
     @PostMapping("/start")
-    public FileDTO startVirtualDiskBuild(@RequestBody FileDTO file) throws InterruptedException, ExecutionException, IOException {
+    public ImageDTO startVirtualDiskBuild(@RequestBody ImageDTO image) throws InterruptedException, ExecutionException, IOException {
         
-        Build response = fileService.startVirtualDiskBuild(file.getObjectName(), file.getImageName());
+        Build response = imageService.startVirtualDiskBuild(image.getObjectName(), image.getImageName());
 
         if (response == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
-        file.setBuildId(response.getId());
-        file.setBuildStatus(response.getStatus().name());
+        image.setBuildId(response.getId());
+        image.setBuildStatus(response.getStatus().name());
 
-        return file;
+        return image;
     }
 
     @PostMapping("/cancel")
-    public FileDTO cancelVirtualDiskBuild(@RequestBody FileDTO file) throws IOException {
-        Build response = fileService.cancelVirtualDiskBUild(file.getBuildId());
+    public ImageDTO cancelVirtualDiskBuild(@RequestBody ImageDTO image) throws IOException {
+        Build response = imageService.cancelVirtualDiskBUild(image.getBuildId());
 
         if (response == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
-        file.setBuildStatus(response.getStatus().name());
+        image.setBuildStatus(response.getStatus().name());
 
-        return file;
+        return image;
     }
 }

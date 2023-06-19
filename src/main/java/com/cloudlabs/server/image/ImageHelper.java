@@ -1,6 +1,6 @@
-package com.cloudlabs.server.file;
+package com.cloudlabs.server.image;
 
-public class FileHelper {
+public class ImageHelper {
     public static String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf('.');
         if(index > 0) {
