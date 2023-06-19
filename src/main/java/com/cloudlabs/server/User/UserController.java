@@ -31,7 +31,7 @@ public class UserController {
 		return userDetailsService.loadUserByUsername(attributes.get("username").toString());
 	}
 
-	@GetMapping("/tutor")
+	@GetMapping("/users")
 	@PreAuthorize("hasAuthority('TUTOR')")
 	public UserDetails getUser1(Authentication authentication) {
 		JwtAuthenticationToken token = (JwtAuthenticationToken) authentication;

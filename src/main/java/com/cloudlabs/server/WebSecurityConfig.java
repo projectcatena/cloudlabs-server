@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -64,21 +63,21 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 	@Override
 	protected UserDetailsService userDetailsService() {
 		UserDetails user1 = org.springframework.security.core.userdetails.User
-				.withUsername("user1")
+				.withUsername("user1@gmail.com")
 				.authorities("USER")
 				.passwordEncoder(passwordEncoder::encode)
 				.password("1234")
 				.build();
 		
 		UserDetails user2 = org.springframework.security.core.userdetails.User
-		.withUsername("user2")
+		.withUsername("admin@gmail.com")
 		.authorities("ADMIN", "USER")
 		.passwordEncoder(passwordEncoder::encode)
 		.password("1234")
 		.build();
 
 		UserDetails user3 = org.springframework.security.core.userdetails.User
-		.withUsername("user3")
+		.withUsername("tutor@gmail.com")
 		.authorities("TUTOR", "USER")
 		.passwordEncoder(passwordEncoder::encode)
 		.password("1234")
@@ -89,6 +88,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 		manager.createUser(user2);
 		manager.createUser(user3);
 		return manager;
+	}
+	@Bean
+	protected JwtAuthenticationConverter authenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthorityPrefix("");
+        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return converter;
 	}
 	/*
     @Bean
@@ -123,13 +132,5 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
         return source;
     }
 
-	protected JwtAuthenticationConverter authenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
-	}
+	
 }
