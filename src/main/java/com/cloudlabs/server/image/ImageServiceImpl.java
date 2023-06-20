@@ -2,6 +2,7 @@ package com.cloudlabs.server.image;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,11 @@ import com.google.auth.Credentials;
 import com.google.auth.ServiceAccountSigner;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ImpersonatedCredentials;
+import com.google.cloud.compute.v1.DeleteImageRequest;
+import com.google.cloud.compute.v1.Image;
+import com.google.cloud.compute.v1.ImagesClient;
+import com.google.cloud.compute.v1.ListImagesRequest;
+import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.devtools.cloudbuild.v1.CloudBuildClient;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -128,6 +134,19 @@ public class ImageServiceImpl implements ImageService {
         return true;
     }
 
+    /**
+     * Start a build to convert the uploaded virtual disk to an image that can be used by
+     * a compute instance. The build process is long and may be 30 minutes or more. Object
+     * name is the name of the uploaded virtual disk, while imageName is the name of the image
+     * given by the user. 
+     * 
+     * A unique buildId is returned, which can be used for more operations on the build, such as
+     * quering information on the build, or cancelling the build. 
+     * 
+     * @param objectName
+     * @param imageName
+     * @return buildId
+     */
     @Override
     public Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException {
 
@@ -183,6 +202,13 @@ public class ImageServiceImpl implements ImageService {
         }
     }
 
+    /**
+     * Cancel an ongoing build that converts a virtual disk to an image that can be used
+     * by a compute instance.
+     * 
+     * @param buildId
+     * @return response
+     */
     @Override
     public Build cancelVirtualDiskBUild(String buildId) throws IOException {
 
@@ -202,5 +228,53 @@ public class ImageServiceImpl implements ImageService {
         }
 
     }
-    
+
+    @Override
+    public List<ImageDTO> listImages() throws IOException {
+        // Initialize client that will be used to send requests. This client only needs to be created
+        // once, and can be reused for multiple requests. After completing all of your requests, call
+        // the `instancesClient.close()` method on the client to
+        // safely clean up any remaining background resources.
+        try (ImagesClient imagesClient = ImagesClient.create()) {
+
+            // Listing only non-deprecated images to reduce the size of the reply.
+            ListImagesRequest imagesRequest = ListImagesRequest.newBuilder()
+                .setProject(projectId)
+                .setMaxResults(100)
+                // .setFilter("deprecated.state != DEPRECATED")
+                .build();
+
+            // Although the `setMaxResults` parameter is specified in the request, the iterable returned
+            // by the `list()` method hides the pagination mechanic. The library makes multiple
+            // requests to the API for you, so you can simply iterate over all the images.
+            List<ImageDTO> images = new ArrayList<ImageDTO>();
+            for (Image image : imagesClient.list(imagesRequest).iterateAll()) {
+                ImageDTO imageDTO = new ImageDTO();
+                imageDTO.setImageName(image.getName());
+                imageDTO.setCreationTimestamp(Instant.parse(image.getCreationTimestamp()));
+                imageDTO.setImageStatus(ImageStatus.valueOf(image.getStatus()));
+                imageDTO.setImageId(image.getId());
+                images.add(imageDTO);
+            }
+
+            return images;
+        }
+    }
+
+    /**
+     * Deletes an existing image on GCP given its name. This function 
+     * does not return anything.
+     * 
+     * @param imageName
+     */
+    @Override
+    public void deleteImage(String imageName) throws IOException, InterruptedException, ExecutionException {
+        try (ImagesClient imagesClient = ImagesClient.create()) {
+            DeleteImageRequest deleteImageRequest = DeleteImageRequest.newBuilder()
+                .setProject(projectId)
+                .setImage(imageName)
+                .build();
+            Operation response = imagesClient.deleteAsync(deleteImageRequest).get();
+        }
+    }    
 }

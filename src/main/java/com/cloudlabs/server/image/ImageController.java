@@ -2,11 +2,13 @@ package com.cloudlabs.server.image;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,5 +65,20 @@ public class ImageController {
         image.setBuildStatus(response.getStatus().name());
 
         return image;
+    }
+
+    @GetMapping("/list")
+    public List<ImageDTO> listImages() throws IOException {
+
+        return imageService.listImages();
+    }
+
+    @PostMapping("/delete")
+    public ResponseEntity<String> deleteImage(@RequestBody ImageDTO image) throws IOException, InterruptedException, ExecutionException {
+        String imageName = image.getImageName();
+
+        imageService.deleteImage(imageName);
+    
+        return ResponseEntity.ok().build();
     }
 }
