@@ -61,7 +61,17 @@
             <version>1.5.1</version>
             <scope>compile</scope>
         </dependency>
+        
+        <!--Apache Commons Lang to work with strings-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
     </dependencies>
+
+        
+
 
     <build>
         <plugins>
