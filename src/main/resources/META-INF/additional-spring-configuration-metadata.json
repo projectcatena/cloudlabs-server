@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "gcp.bucket.name",
+    "type": "java.lang.String",
+    "description": "The name of a GCP Cloud Storage Bucket"
+  },
+  {
+    "name": "gcp.project.id",
+    "type": "java.lang.String",
+    "description": "The ID of a GCP Project"
+  },
+  {
+    "name": "gcp.signing.service.account",
+    "type": "java.lang.String",
+    "description": "A GCP service account that is used for signing blobs"
+  }
+]}
