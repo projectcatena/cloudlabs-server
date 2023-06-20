@@ -1,7 +1,6 @@
 package com.cloudlabs.server.Modules;
 
 import com.cloudlabs.server.Modules.Module;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +43,7 @@ public class ModuleController {
         String title = requestData.get("title").asText();
         String description = requestData.get("description").asText();
 
-        if (StringUtils.isBlank(subtitle) || StringUtils.isBlank(title) || StringUtils.isBlank(description)) {
+        if (subtitle.isBlank() || title.isBlank() || description.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Module details input");
         }
 
