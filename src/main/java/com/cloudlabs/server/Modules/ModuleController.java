@@ -1,6 +1,8 @@
-package com.cloudlabs.server.Modules;
+package com.cloudlabs.server.modules;
 
-import com.cloudlabs.server.Modules.Module;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.cloudlabs.server.modules.Module;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.IOException;
@@ -19,21 +22,32 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import javax.swing.JSpinner.ListEditor;
+
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RestController
 @RequestMapping("/Modules")
 public class ModuleController {
-    
-    private List<Module> modules = new ArrayList<>();
 
-    public ModuleController() {
-        modules.add(Module.from("1_EH_00", "Ethical Hacking", "Explore various methods to extract valuable information from targeted systems without causing harm and gain practical experience in executing controlled attacks to simulate real-world scenarios, enabling the identification and mitigation of security weaknesses."));
-        modules.add(Module.from("1_WAPT_00", "Web Application Pen-Testing", "Delve into the process of identifying and exploiting vulnerabilities in web applications to assess their resilience against cyberattacks and gain hands-on experience with tools and techniques specifically designed for web application testing, such as vulnerability scanners, proxy tools, and manual testing methodologies."));
+    @Autowired
+    private ModuleRepository repository;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void runAfterStartup() {
+        List allModules = this.repository.findAll();
+
+        Module newModule = new Module();
+        newModule.setModuleSubtitle("1_EH_000");
+        newModule.setModuleName("Ethical Hacking");
+        newModule.setModuleDescription("Explore various methods to extract valuable information from targeted systems without causing harm and gain practical experience in executing controlled attacks to simulate real-world scenarios, enabling the identification and mitigation of security weaknesses.");
+        this.repository.save(newModule);
+
+        allModules = this.repository.findAll();
     }
 
     @GetMapping
-    public List<Module> getModules(){
-        return modules;
+    public List<Module> getAllModules(){
+        return repository.findAll();
     }
 
     @PostMapping("/create")
@@ -48,21 +62,21 @@ public class ModuleController {
         }
 
         // Create a new Module instance
-        Module module = new Module();
+        Module newModule = new Module();
 
         // Set the attributes of the module
-        module.setModuleSubtitle(subtitle);
-        module.setModuleName(title);
-        module.setModuleDescription(description);
+        newModule.setModuleSubtitle(subtitle);
+        newModule.setModuleName(title);
+        newModule.setModuleDescription(description);
 
         // Generate a unique ID for the module
-        String id = UUID.randomUUID().toString();
-        module.setModuleId(id);
+        Long id = Long.valueOf(UUID.randomUUID().toString());
+        newModule.setModuleId(id);
 
         // Add the new module to the modules ArrayList
-        modules.add(module);
+        this.repository.save(newModule);
 
         // Return the created module
-        return module;
+        return newModule;
     }
 }

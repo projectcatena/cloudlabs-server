@@ -1,18 +1,35 @@
-package com.cloudlabs.server.Modules;
+package com.cloudlabs.server.modules;
 
 import java.util.UUID;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "modules")
 public class Module {
-    private String moduleId;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long moduleId;
+
+    @Column(name = "subtitle", nullable = false)
     private String moduleSubtitle;
+
+    @Column(name = "name", nullable = false)
     private String moduleName;
+
+    @Column(name = "description", length = 1000, nullable = false)
     private String moduleDescription;
 
-    public String getModuleID() {
+    public Long getModuleID() {
         return this.moduleId;
     }
 
-    public void setModuleId(String moduleId) {
+    public void setModuleId(Long moduleId) {
         this.moduleId = moduleId;
     }
 
@@ -46,7 +63,8 @@ public class Module {
         module.setModuleName(moduleName);
         module.setModuleDescription(moduleDescription);
 
-        module.setModuleId(UUID.randomUUID().toString());
+        module.setModuleId(Long.valueOf(UUID.randomUUID().toString()));
+
         return module;
     }
 }
