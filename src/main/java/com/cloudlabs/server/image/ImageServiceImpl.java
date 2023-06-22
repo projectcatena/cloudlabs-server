@@ -13,7 +13,13 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.cloudlabs.server.image.dto.BuildImageDTO;
+import com.cloudlabs.server.image.dto.DeleteImageDTO;
+import com.cloudlabs.server.image.dto.ImageDTO;
+import com.cloudlabs.server.image.enums.DeleteImageStatus;
+import com.cloudlabs.server.image.enums.ImageStatus;
 import com.google.api.gax.longrunning.OperationFuture;
+import com.google.api.gax.rpc.NotFoundException;
 import com.google.auth.Credentials;
 import com.google.auth.ServiceAccountSigner;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -60,7 +66,7 @@ public class ImageServiceImpl implements ImageService {
      * @throws IOException
      * 
      */
-    public URL generateV4PutObjectSignedUrl(String objectName) {
+    public ImageDTO generateV4PutObjectSignedUrl(String objectName) {
         if (objectName == null) {
             return null;
         }
@@ -113,7 +119,11 @@ public class ImageServiceImpl implements ImageService {
                 Storage.SignUrlOption.withV4Signature(),
                 Storage.SignUrlOption.signWith((ServiceAccountSigner) credentials));
 
-        return url;
+        ImageDTO imageDTO = new ImageDTO();
+        imageDTO.setSignedURL(url.toString());
+        imageDTO.setObjectName(objectName);
+
+        return imageDTO;
     }
 
     /**
@@ -148,7 +158,7 @@ public class ImageServiceImpl implements ImageService {
      * @return buildId
      */
     @Override
-    public Build startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException {
+    public BuildImageDTO startVirtualDiskBuild(String objectName, String imageName) throws InterruptedException, ExecutionException, IOException {
 
         if (objectName == null || imageName == null) {
             return null;
@@ -198,7 +208,13 @@ public class ImageServiceImpl implements ImageService {
             // which will take approx. 30 minutes
             Build ongoingBuild = operation.getMetadata().get().getBuild();
 
-            return ongoingBuild;
+            BuildImageDTO buildImageDTO = new BuildImageDTO();
+            buildImageDTO.setObjectName(objectName);
+            buildImageDTO.setImageName(imageName);
+            buildImageDTO.setBuildId(ongoingBuild.getId());
+            buildImageDTO.setBuildStatus(ongoingBuild.getStatus().name());
+
+            return buildImageDTO;
         }
     }
 
@@ -210,7 +226,7 @@ public class ImageServiceImpl implements ImageService {
      * @return response
      */
     @Override
-    public Build cancelVirtualDiskBUild(String buildId) throws IOException {
+    public BuildImageDTO cancelVirtualDiskBUild(String buildId) throws IOException {
 
         if (buildId == null) {
             return null;
@@ -224,7 +240,21 @@ public class ImageServiceImpl implements ImageService {
 
            Build response = cloudBuildClient.cancelBuild(cancelBuildRequest);
 
-           return response;
+           BuildImageDTO buildImageDTO = new BuildImageDTO();
+           buildImageDTO.setBuildStatus(response.getStatus().name());
+
+           return buildImageDTO;
+        } catch (Exception exception) {
+
+            BuildImageDTO buildImageDTO = new BuildImageDTO();
+
+            if (exception.getCause() instanceof NotFoundException) {
+                buildImageDTO.setBuildStatus("NOT FOUND");
+            } else {
+                buildImageDTO.setBuildStatus("FAILED");
+            }
+
+            return buildImageDTO;
         }
 
     }
@@ -262,19 +292,32 @@ public class ImageServiceImpl implements ImageService {
     }
 
     /**
-     * Deletes an existing image on GCP given its name. This function 
-     * does not return anything.
+     * Deletes an existing image on GCP given its name. 
      * 
      * @param imageName
      */
     @Override
-    public void deleteImage(String imageName) throws IOException, InterruptedException, ExecutionException {
+    public DeleteImageDTO deleteImage(String imageName) throws IOException, InterruptedException, ExecutionException {
         try (ImagesClient imagesClient = ImagesClient.create()) {
             DeleteImageRequest deleteImageRequest = DeleteImageRequest.newBuilder()
                 .setProject(projectId)
                 .setImage(imageName)
                 .build();
             Operation response = imagesClient.deleteAsync(deleteImageRequest).get();
+            
+            DeleteImageDTO deleteImageDTO = new DeleteImageDTO();
+
+            deleteImageDTO.setDeleteStatus(DeleteImageStatus.valueOf(response.getStatus().name()));
+            deleteImageDTO.setDeleteOperationId(response.getId());
+
+            return deleteImageDTO;
+        } catch (Exception exception) {
+
+            DeleteImageDTO deleteImageDTO = new DeleteImageDTO();
+
+            deleteImageDTO.setDeleteStatus(DeleteImageStatus.FAILED);
+
+            return deleteImageDTO;
         }
     }    
 }

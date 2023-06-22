@@ -1,5 +1,7 @@
 package com.cloudlabs.server.image;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.charset.Charset;
@@ -15,8 +17,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import com.cloudlabs.server.image.dto.BuildImageDTO;
+import com.cloudlabs.server.image.dto.ImageDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.cloudbuild.v1.Build;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -110,10 +113,11 @@ public class ImageControllerTests {
                 .andReturn();
         
         // After launching a build, should cancel it to prevent unnecessary costly builds.
-        ImageDTO responseFile = objectMapper.readValue(response.getResponse().getContentAsString(), ImageDTO.class);
-        Build cancelBuildResponse = imageService.cancelVirtualDiskBUild(responseFile.getBuildId());
+        BuildImageDTO buildImageDTO = objectMapper.readValue(response.getResponse().getContentAsString(), BuildImageDTO.class);
+        BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild(buildImageDTO.getBuildId());
 
-        assertNotNull(cancelBuildResponse);
+        assertNotNull(cancelBuildResponse.getBuildStatus());
+        assertNotEquals("", cancelBuildResponse.getBuildStatus());
     } 
 
     @Test
@@ -141,6 +145,18 @@ public class ImageControllerTests {
         this.mockMvc.perform(MockMvcRequestBuilders.post("/image/start")
                 .contentType(MediaType.APPLICATION_JSON).content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void failCancelBuild_whenBuildDoesNotExist() throws Exception {
+        // Generate random string
+        byte[] array = new byte[7]; // length is bounded by 7
+        new Random().nextBytes(array);
+        String generatedString = new String(array, Charset.forName("UTF-8"));
+
+        BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild(generatedString);
+
+        assertEquals("NOT FOUND", cancelBuildResponse.getBuildStatus());
     }
 
     @Test

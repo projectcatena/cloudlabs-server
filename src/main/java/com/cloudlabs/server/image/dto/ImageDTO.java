@@ -1,15 +1,10 @@
-package com.cloudlabs.server.image;
+package com.cloudlabs.server.image.dto;
 
 import java.time.Instant;
 
+import com.cloudlabs.server.image.enums.ImageStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-
-enum ImageStatus {
-    READY,
-    FAILED,
-    PENDING
-}
 
 @JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
 public class ImageDTO {
@@ -23,19 +18,9 @@ public class ImageDTO {
      */
     private ImageStatus imageStatus;
     private String signedURL;
-    private String buildStatus;
-    private String buildId;
     private Instant creationTimestamp;
 
     public ImageDTO() {}
-
-    public Instant getCreationTimestamp() {
-        return this.creationTimestamp;
-    }
-
-    public void setCreationTimestamp(Instant creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
-    }
 
     public long getImageId() {
         return this.imageId;
@@ -51,22 +36,6 @@ public class ImageDTO {
 
     public void setImageStatus(ImageStatus imageStatus) {
         this.imageStatus = imageStatus;
-    }
-
-    public String getBuildStatus() {
-        return this.buildStatus;
-    }
-
-    public void setBuildStatus(String buildStatus) {
-        this.buildStatus = buildStatus;
-    }
-
-    public String getBuildId() {
-        return this.buildId;
-    }
-
-    public void setBuildId(String buildId) {
-        this.buildId = buildId;
     }
 
     public String getImageName() {
@@ -92,5 +61,13 @@ public class ImageDTO {
     public void setObjectName(String objectName) {
         this.objectName = objectName;
     }
-    
+
+    public Instant getCreationTimestamp() {
+        return this.creationTimestamp;
+    }
+
+    public void setCreationTimestamp(Instant creationTimestamp) {
+        this.creationTimestamp = creationTimestamp;
+    }
+
 }
