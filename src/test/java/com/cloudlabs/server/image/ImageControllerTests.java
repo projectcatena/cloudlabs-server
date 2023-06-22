@@ -149,12 +149,7 @@ public class ImageControllerTests {
 
     @Test
     void failCancelBuild_whenBuildDoesNotExist() throws Exception {
-        // Generate random string
-        byte[] array = new byte[7]; // length is bounded by 7
-        new Random().nextBytes(array);
-        String generatedString = new String(array, Charset.forName("UTF-8"));
-
-        BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild(generatedString);
+        BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild("12837173291-non-existent-id");
 
         assertEquals("NOT FOUND", cancelBuildResponse.getBuildStatus());
     }
