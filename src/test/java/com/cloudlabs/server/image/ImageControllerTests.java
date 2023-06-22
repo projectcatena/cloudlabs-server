@@ -142,4 +142,27 @@ public class ImageControllerTests {
                 .contentType(MediaType.APPLICATION_JSON).content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
+
+    @Test
+    void listImage_whenNoParametersGiven() throws Exception {
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/image/list"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void failListImage_whenWrongRequestMethod() throws Exception {
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/list"))
+                .andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
+    }
+
+    @Test
+    void failDeleteImage_whenImageDoesNotExist() throws Exception {
+        ImageDTO image = new ImageDTO();
+        image.setImageName("test-image-does-not-exist");
+
+        String jsonString = objectMapper.writeValueAsString(image);
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/delete")
+                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
 }

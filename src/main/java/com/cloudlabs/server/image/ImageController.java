@@ -77,7 +77,11 @@ public class ImageController {
     public ResponseEntity<String> deleteImage(@RequestBody ImageDTO image) throws IOException, InterruptedException, ExecutionException {
         String imageName = image.getImageName();
 
-        imageService.deleteImage(imageName);
+        try {
+            imageService.deleteImage(imageName);
+        } catch (Exception exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     
         return ResponseEntity.ok().build();
     }
