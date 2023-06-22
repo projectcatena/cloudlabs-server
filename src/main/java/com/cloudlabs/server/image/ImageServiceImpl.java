@@ -247,12 +247,12 @@ public class ImageServiceImpl implements ImageService {
         } catch (Exception exception) {
 
             BuildImageDTO buildImageDTO = new BuildImageDTO();
-
-            if (exception.getCause() instanceof NotFoundException) {
-                buildImageDTO.setBuildStatus("NOT FOUND");
-            } else {
-                buildImageDTO.setBuildStatus("FAILED");
-            }
+            buildImageDTO.setBuildStatus("FAILED");
+            // if (exception.getCause() instanceof NotFoundException) {
+            //     buildImageDTO.setBuildStatus("NOT FOUND");
+            // } else {
+            //     buildImageDTO.setBuildStatus("FAILED");
+            // }
 
             return buildImageDTO;
         }

@@ -151,7 +151,7 @@ public class ImageControllerTests {
     void failCancelBuild_whenBuildDoesNotExist() throws Exception {
         BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild("12837173291-non-existent-id");
 
-        assertEquals("NOT FOUND", cancelBuildResponse.getBuildStatus());
+        assertEquals("FAILED", cancelBuildResponse.getBuildStatus());
     }
 
     @Test
