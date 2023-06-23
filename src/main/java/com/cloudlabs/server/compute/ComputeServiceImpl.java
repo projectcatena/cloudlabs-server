@@ -7,13 +7,19 @@ import java.util.concurrent.TimeoutException;
 
 import org.springframework.stereotype.Service;
 
+import com.cloudlabs.server.compute.dto.AddressDTO;
+import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.compute.dto.MachineTypeDTO;
+import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.google.api.gax.longrunning.OperationFuture;
 import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AddAccessConfigInstanceRequest;
 import com.google.cloud.compute.v1.Address;
 import com.google.cloud.compute.v1.AddressesClient;
 import com.google.cloud.compute.v1.AttachedDisk;
+import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
+import com.google.cloud.compute.v1.DeleteInstanceRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -23,7 +29,6 @@ import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.ServiceAccount;
-import com.google.cloud.compute.v1.AttachedDisk.Type;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -33,8 +38,7 @@ public class ComputeServiceImpl implements ComputeService {
 	static String region = "asia-southeast1";
 
     @Override
-    public boolean createPublicInstance(Compute computeInstanceMetadata)
-            throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
         // Initialize client that will be used to send requests. This client only needs
 		// to be created
 		// once, and can be reused for multiple requests. After completing all of your
@@ -52,12 +56,25 @@ public class ComputeServiceImpl implements ComputeService {
 			// https://cloud.google.com/compute/docs/images
 			// diskSizeGb: storage size of the boot disk to attach to the instance.
 			// networkName: network interface to associate with the instance.
-			String machineType = computeInstanceMetadata.getMachineType();
-			String sourceImage = computeInstanceMetadata.getSourceImage();
+			computeInstanceMetadata.setDiskSizeGb(10);
+            computeInstanceMetadata.setNetworkName("default");
+
+			MachineTypeDTO machineTypeDTO = computeInstanceMetadata.getMachineType();
+            machineTypeDTO.setZone(zone);
+            String machineType = String.format("zones/%s/machineTypes/%s", machineTypeDTO.getZone(), machineTypeDTO.getName());
+
+			SourceImageDTO sourceImageDTO = computeInstanceMetadata.getSourceImage();
+			String sourceImage = String
+					.format("projects/%s/global/images/family/%s", sourceImageDTO.getProject(), sourceImageDTO.getName());
+
 			long diskSizeGb = computeInstanceMetadata.getDiskSizeGb();
 			String networkName = computeInstanceMetadata.getNetworkName();
 			String instanceName = computeInstanceMetadata.getInstanceName();
 			String startupScript = computeInstanceMetadata.getStartupScript();
+
+            if (startupScript == null) {
+                startupScript = "";
+            }
 
 			// Instance creation requires at least one persistent disk and one network
 			// interface.
@@ -104,7 +121,7 @@ public class ComputeServiceImpl implements ComputeService {
 					.addNetworkInterfaces(networkInterface)
 					.build();
 
-			System.out.printf("Creating instance: %s at %s %n", instanceName, zone);
+			// System.out.printf("Creating instance: %s at %s %n", instanceName, zone);
 
 			// Insert the instance in the specified project and zone.
 			InsertInstanceRequest insertInstanceRequest = InsertInstanceRequest.newBuilder()
@@ -120,11 +137,8 @@ public class ComputeServiceImpl implements ComputeService {
 			Operation response = operation.get(3, TimeUnit.MINUTES);
 
 			if (response.hasError()) {
-				System.out.println("Instance creation failed ! ! " + response);
-				return false;
+				return null;
 			}
-
-			System.out.println("Operation Status: " + response.getStatus());
 
             /*
              * Allow the instance to be publicly accessible, only if the instance creation is successful.
@@ -136,23 +150,57 @@ public class ComputeServiceImpl implements ComputeService {
              */
             // Reserve Public IP Address for the instance
             String addressResourceName = String.format("%s-public-ip", instanceName);
-			String publicIPAddressResposne = reserveStaticExternalIPAddress(project, region, addressResourceName);
-			System.out.println(publicIPAddressResposne);
+			reserveStaticExternalIPAddress(addressResourceName);
 
             // Get value of newly created external IP address
-            String publicIPAddress = getExternalStaticIPAdress(project, region, addressResourceName);
-            System.out.println(publicIPAddress);
+            AddressDTO publicIPAddressDTO = getExternalStaticIPAdress(addressResourceName);
 
             // Attach the Public IP Address to the instance's default network interface: nic0
-            String attachPublicIPAddressResponse = assignStaticExternalIPAddress(project, zone, instanceName, publicIPAddress, "nic0");
-            System.out.println(attachPublicIPAddressResponse);
+            assignStaticExternalIPAddress(instanceName, publicIPAddressDTO.getExternalIPv4Address(), "nic0");
 
-			return true;
-		}
+            ComputeDTO responseComputeDTO = new ComputeDTO();
+            responseComputeDTO.setInstanceName(instanceName);
+            responseComputeDTO.setAddressDTO(publicIPAddressDTO);
+
+			return responseComputeDTO;
+		} catch (Exception exception) {
+            return null;
+        }
     }
 
     @Override
-    public final String reserveStaticExternalIPAddress(String project, String region, String ipAddressName) {
+    public ComputeDTO deleteInstance(String instanceName) {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
+
+            // Describe which instance is to be deleted.
+            DeleteInstanceRequest deleteInstanceRequest = DeleteInstanceRequest.newBuilder()
+                .setProject(project)
+                .setZone(zone)
+                .setInstance(instanceName).build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.deleteAsync(
+                deleteInstanceRequest);
+            // Wait for the operation to complete.
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.hasError()) {
+                return null;
+            }
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setInstanceName(instanceName);
+            computeDTO.setStatus(response.getStatus().name());
+
+            return computeDTO;
+
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    @Override
+    public final void reserveStaticExternalIPAddress(String ipAddressName) 
+        throws InterruptedException, ExecutionException, IOException {
         try (AddressesClient addressClient = AddressesClient.create()) {
 
             Address addressResource = Address.newBuilder()
@@ -165,23 +213,9 @@ public class ComputeServiceImpl implements ComputeService {
                 .setRegion(region)
                 .build();
 
-            Operation response = addressClient.insertAsync(request).get();
-
-            return response.getStatus().toString();
-    
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            return e.toString();
-        } catch (ExecutionException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return e.getMessage();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return e.getMessage();
+            // Operation response = addressClient.insertAsync(request).get();
+            addressClient.insertAsync(request).get();
         }
-
     }
 
     /**
@@ -192,17 +226,22 @@ public class ComputeServiceImpl implements ComputeService {
      * @param addressName
      * @return the external static IP address of the instance
      */
-    public String getExternalStaticIPAdress(String project, String region, String addressName) {
+    public AddressDTO getExternalStaticIPAdress(String addressName) {
         try (AddressesClient addressClient = AddressesClient.create()) {
             Address address = addressClient.get(project, region, addressName);
-            return address.getAddress();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return "Address Retrieval Failed";   
+
+            AddressDTO addressDTO = new AddressDTO();
+            addressDTO.setExternalIPv4Address(address.getAddress());
+
+            return addressDTO;
+        } catch (Exception exception) {
+            return null;   
         }
     }
 
-    public String assignStaticExternalIPAddress(String project, String zone, String instanceName, String ipAddress, String networkInterfaceName) throws IOException {
+    public void assignStaticExternalIPAddress(String instanceName, String ipAddress, String networkInterfaceName) 
+        throws IOException, InterruptedException, ExecutionException {
+
         try (InstancesClient instancesClient = InstancesClient.create()) {
 
             AccessConfig accessConfig = AccessConfig.newBuilder()
@@ -218,17 +257,8 @@ public class ComputeServiceImpl implements ComputeService {
                 .setZone(zone)
                 .build();
 
-            Operation response = instancesClient.addAccessConfigAsync(request).get();
-
-            return response.getStatus().toString();
-    
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            return e.toString();
-        } catch (ExecutionException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return e.getMessage();
+            // Operation response = instancesClient.addAccessConfigAsync(request).get();
+            instancesClient.addAccessConfigAsync(request).get();
         }
     }
 }

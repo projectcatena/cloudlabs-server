@@ -1,5 +1,7 @@
 package com.cloudlabs.server.compute;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -9,6 +11,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 public class ComputeControllerTests {
@@ -16,49 +21,51 @@ public class ComputeControllerTests {
     @Autowired
     protected MockMvc mockMvc;
 
-    // @RegisterExtension
-    // static WireMockExtension wireMockServer = WireMockExtension.newInstance()
-    //     .options(WireMockConfiguration.wireMockConfig().dynamicPort())
-    //     .build();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    // @DynamicPropertySource
-    // static void configureProperties(DynamicPropertyRegistry dynamicPropertyRegistry) {
-    //     dynamicPropertyRegistry.add("gcp_base_url", wireMockServer::baseUrl);
-    // }
+    @Autowired
+    private ComputeService computeService;
 
-    /**
-     * Simulates a user input collected from front-end to create and launch a compute instance.
-     * MockServer will response with success, when instance is created and launched.
-     * 
-     * @throws Exception
-     */
     @Test
     void createComputeEngine_whenParametersGiven() throws Exception {
-        // wireMockServer.stubFor(WireMock.post(WireMock.urlEqualTo("/compute/create"))
-        //     .willReturn(WireMock.aResponse()
-        //     .withStatus(200)
-        //     .withHeader("Content-Type", MediaType.APPLICATION_PROBLEM_JSON_VALUE)
-        //     .withBody("""
-        //     {
-        //         \"status\": \"success\",
-        //     }
-        //     """)));
-
         this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
             .contentType(MediaType.APPLICATION_JSON).content("""
                     {
-                        \"name\": \"test\",
+                        \"instanceName\": \"test\",
                         \"script\": \"\",
-                        \"selectedImage\": {
+                        \"sourceImage\": {
                             \"name\": \"debian-11\",
-                            \"project\": \"projects/debian-cloud/global/images/family/\"
+                            \"project\": \"debian-cloud\"
                         },
-                        \"selectedInstanceType\": {
+                        \"machineType\": {
                             \"name\": \"e2-micro\"
                         }
                     }
                     """))
             .andExpect(MockMvcResultMatchers.status().isOk());
+        
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance("test");
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void failCreateComputeEngine_whenIncorrectParametersGiven() throws Exception {
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
+            .contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+                        \"instanceName\": \"test\",
+                        \"script\": \"\",
+                        \"sourceImage\": {
+                            \"name\": \"debian-11\",
+                            \"project\": \"debian-cloud\"
+                        },
+                        \"machineType\": {
+                            \"name\": \"e10-micro\"
+                        }
+                    }
+                    """))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
