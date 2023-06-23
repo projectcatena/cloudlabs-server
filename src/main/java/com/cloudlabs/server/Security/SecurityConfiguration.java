@@ -1,4 +1,4 @@
-package com.cloudlabs.server.Security;
+package com.cloudlabs.server.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

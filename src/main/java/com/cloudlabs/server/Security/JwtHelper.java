@@ -1,4 +1,4 @@
-package com.cloudlabs.server.Security;
+package com.cloudlabs.server.security;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;

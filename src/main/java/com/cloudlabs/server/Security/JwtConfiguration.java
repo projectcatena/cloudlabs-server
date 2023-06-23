@@ -1,4 +1,4 @@
-package com.cloudlabs.server.Security;
+package com.cloudlabs.server.security;
 
 import java.io.IOException;
 import java.io.InputStream;

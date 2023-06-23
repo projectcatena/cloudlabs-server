@@ -1,4 +1,4 @@
-package com.cloudlabs.server;
+package com.cloudlabs.server.authentication;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

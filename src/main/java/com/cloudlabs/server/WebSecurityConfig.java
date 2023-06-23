@@ -3,37 +3,47 @@ package com.cloudlabs.server;
 import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-
-//@EnableWebSecurity
+@Configuration
+@EnableWebSecurity
 @Component
 @EnableGlobalMethodSecurity(
         prePostEnabled = true
 )
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
+public class WebSecurityConfig{
 
 	public static final String AUTHORITIES_CLAIM_NAME = "roles";
 	
-	private final PasswordEncoder passwordEncoder;
+	//private final PasswordEncoder passwordEncoder;
+
+	//@Autowired
+    //private AuthenticationSuccessHandlerImpl successHandler;
+
+	//@Autowired
+	//private WebApplicationContext applicationContext;
+
+	//@Autowired
+    //private DataSource dataSource;
+
+	//private UserDetailsService userDetailsService;
 	
+	/*
 	public WebSecurityConfig(PasswordEncoder passwordEncoder) {
 		this.passwordEncoder = passwordEncoder;
 	}
-	
+	 */
+	/*
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
@@ -57,8 +67,29 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
                 .jwt()
                 .jwtAuthenticationConverter(authenticationConverter());
 	}
+	 */
 	
-	/* Real credentials take from database */
+	/*
+	@PostConstruct
+	public void completeSetup() {
+		userDetailsService = applicationContext.getBean(UserDetailsService.class);
+	}
+	 */
+	/*
+	@Bean
+    public UserDetailsManager users(HttpSecurity http) throws Exception {
+        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManagerBuilder.class)
+            .userDetailsService(userDetailsService)
+            .passwordEncoder(passwordEncoder)
+            .and()
+            .build();
+
+        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+        jdbcUserDetailsManager.setAuthenticationManager(authenticationManager);
+        return jdbcUserDetailsManager;
+    }
+ */
+	/* Real credentials take from database 
 	@Bean
 	@Override
 	protected UserDetailsService userDetailsService() {
@@ -89,6 +120,39 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 		manager.createUser(user3);
 		return manager;
 	}
+	*/
+	
+	
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+		/*
+		http.csrf().disable()
+		.authorizeHttpRequests((authorize) ->
+		authorize.requestMatchers("/module").hasRole)
+		*/
+
+        http.authorizeRequests()
+            .antMatchers("/login", "/signup", "/error")
+            .permitAll()
+			.anyRequest()
+			.authenticated()
+            .and()
+            .csrf()
+            .disable();
+		// JWT Validation Configuration
+        http.oauth2ResourceServer()
+                .jwt()
+                .jwtAuthenticationConverter(authenticationConverter());
+
+		/*  .formLogin()
+            .permitAll()
+            .successHandler(successHandler)
+            .and()	*/
+		return http.build();
+    }
+	
+	//Converts Bearer token to Jwt token
 	@Bean
 	protected JwtAuthenticationConverter authenticationConverter() {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
@@ -99,24 +163,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
         converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
         return converter;
 	}
-	/*
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-
-        // http.authorizeHttpRequests((requests) -> requests
-        //     .requestMatchers("/", "/tunnel").permitAll()
-        //     .anyRequest().anonymous()
-        // );
-
-        // Adds a CorsFilter to be used. If a bean by the name of corsFilter is provided, that CorsFilter is used. 
-        // Else if corsConfigurationSource is defined, then that CorsConfiguration is used.
-        http.cors().and().csrf().disable();
-        //http.httpBasic();
-
-        return http.build();
-    }
-	 */
 	
     // CORS Configuration for Apache Guacamole Traffic
     @Bean

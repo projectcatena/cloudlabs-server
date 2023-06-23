@@ -69,7 +69,14 @@
             <artifactId>java-jwt</artifactId>
             <version>3.11.0</version>
         </dependency>
-        
+
+        <!-- Validation -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>8.0.0.Final</version>
+        </dependency>
+
         <!--PostgreSQL-->
         <dependency>
             <groupId>org.postgresql</groupId>
