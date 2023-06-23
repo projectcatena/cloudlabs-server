@@ -3,7 +3,6 @@ package com.cloudlabs.server.compute;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.springframework.stereotype.Service;
 
@@ -19,6 +18,7 @@ import com.google.cloud.compute.v1.AddressesClient;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
+import com.google.cloud.compute.v1.DeleteAddressRequest;
 import com.google.cloud.compute.v1.DeleteInstanceRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
@@ -156,11 +156,11 @@ public class ComputeServiceImpl implements ComputeService {
             AddressDTO publicIPAddressDTO = getExternalStaticIPAdress(addressResourceName);
 
             // Attach the Public IP Address to the instance's default network interface: nic0
-            assignStaticExternalIPAddress(instanceName, publicIPAddressDTO.getExternalIPv4Address(), "nic0");
+            assignStaticExternalIPAddress(instanceName, publicIPAddressDTO.getIpv4Address(), "nic0");
 
             ComputeDTO responseComputeDTO = new ComputeDTO();
             responseComputeDTO.setInstanceName(instanceName);
-            responseComputeDTO.setAddressDTO(publicIPAddressDTO);
+            responseComputeDTO.setAddress(publicIPAddressDTO);
 
 			return responseComputeDTO;
 		} catch (Exception exception) {
@@ -231,7 +231,8 @@ public class ComputeServiceImpl implements ComputeService {
             Address address = addressClient.get(project, region, addressName);
 
             AddressDTO addressDTO = new AddressDTO();
-            addressDTO.setExternalIPv4Address(address.getAddress());
+            addressDTO.setIpv4Address(address.getAddress());
+            addressDTO.setName(addressName);
 
             return addressDTO;
         } catch (Exception exception) {
@@ -259,6 +260,21 @@ public class ComputeServiceImpl implements ComputeService {
 
             // Operation response = instancesClient.addAccessConfigAsync(request).get();
             instancesClient.addAccessConfigAsync(request).get();
+        }
+    }
+
+    @Override
+    public final void releaseStaticExternalIPAddress(String ipAddressName) throws IOException {
+        try (AddressesClient addressClient = AddressesClient.create()) {
+
+            DeleteAddressRequest request = DeleteAddressRequest.newBuilder()
+                .setAddress(ipAddressName)
+                .setProject(project)
+                .setRegion(region)
+                .build();
+
+            // Operation response = addressClient.insertAsync(request).get();
+            addressClient.deleteAsync(request);
         }
     }
 }

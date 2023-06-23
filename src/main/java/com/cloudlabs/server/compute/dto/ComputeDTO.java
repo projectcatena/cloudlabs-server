@@ -11,7 +11,7 @@ public class ComputeDTO {
     private String networkName;
     private String instanceName;
     private String startupScript;
-    private AddressDTO addressDTO;
+    private AddressDTO address;
     private String status;
 
     public ComputeDTO() {}
@@ -64,12 +64,12 @@ public class ComputeDTO {
         this.startupScript = startupScript;
     }
 
-    public AddressDTO getAddressDTO() {
-        return this.addressDTO;
+    public AddressDTO getAddress() {
+        return this.address;
     }
 
-    public void setAddressDTO(AddressDTO addressDTO) {
-        this.addressDTO = addressDTO;
+    public void setAddress(AddressDTO address) {
+        this.address = address;
     }
 
     public String getStatus() {

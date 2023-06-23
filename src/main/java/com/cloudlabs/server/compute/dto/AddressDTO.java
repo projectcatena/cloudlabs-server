@@ -5,15 +5,22 @@ enum AddressStatus {
 }
 
 public class AddressDTO {
-   private String externalIPv4Address;
+   private String name;
+   private String ipv4Address;
 
-
-    public String getExternalIPv4Address() {
-        return this.externalIPv4Address;
+    public String getName() {
+        return this.name;
     }
 
-    public void setExternalIPv4Address(String externalIPv4Address) {
-        this.externalIPv4Address = externalIPv4Address;
+    public void setName(String name) {
+        this.name = name;
     }
 
+    public String getIpv4Address() {
+        return this.ipv4Address;
+    }
+
+    public void setIpv4Address(String ipv4Address) {
+        this.ipv4Address = ipv4Address;
+    }
 }

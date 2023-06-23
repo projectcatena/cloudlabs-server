@@ -12,4 +12,5 @@ public interface ComputeService {
     void reserveStaticExternalIPAddress(String ipAddressName) throws InterruptedException, ExecutionException, IOException;
     AddressDTO getExternalStaticIPAdress(String addressName);
     void assignStaticExternalIPAddress(String instanceName, String ipAddress, String networkInterfaceName) throws IOException, InterruptedException, ExecutionException;
+    void releaseStaticExternalIPAddress(String ipAddress) throws IOException;
 }

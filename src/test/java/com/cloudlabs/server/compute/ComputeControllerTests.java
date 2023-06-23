@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -28,7 +29,7 @@ public class ComputeControllerTests {
 
     @Test
     void createComputeEngine_whenParametersGiven() throws Exception {
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
             .contentType(MediaType.APPLICATION_JSON).content("""
                     {
                         \"instanceName\": \"test\",
@@ -42,9 +43,13 @@ public class ComputeControllerTests {
                         }
                     }
                     """))
-            .andExpect(MockMvcResultMatchers.status().isOk());
-        
-        ComputeDTO deleteComputeDTO = computeService.deleteInstance("test");
+            .andExpect(MockMvcResultMatchers.status().isOk())
+            .andReturn();
+                    
+        // Delete instance and release its public IP Address after test
+        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(response.getAddress().getName());
 
         assertNotNull(deleteComputeDTO.getStatus());
     }
