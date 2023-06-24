@@ -23,39 +23,21 @@ public class ComputeController {
 
 	// Create a new public instance with the provided "instanceName" value in the specified
 	// project and zone.
-	@PostMapping("/create")
-	public String create(@RequestBody JsonNode request)
+	
+	@DeleteMapping("/{project}/{zone}/{instanceName}")
+	public String delete((@PathVariable String project, @PathVariable String zone, @PathVariable String instanceName))
 			throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
 		try {
-			String machineType = String.format("zones/asia-southeast1-b/machineTypes/%s",
-					request.get("selectedInstanceType").get("name").asText());
-			String sourceImage = String
-					.format("%s%s", request.get("selectedImage").get("project").asText(),
-							request.get("selectedImage").get("name").asText());
-			long diskSizeGb = 10L;
-			String networkName = "default";
-			String instanceName = request.get("name").asText();
-			String startupScript = request.get("script").asText();
+        	boolean deletionResult = computeService.deleteInstance(project, zone, instanceName);
 
-            Compute computeInstanceMetadata = new Compute(machineType, sourceImage, diskSizeGb, networkName, instanceName, startupScript);
 
-            boolean isSuccess = computeService.createPublicInstance(computeInstanceMetadata);
-
-            if (!isSuccess) {
+            if (!deletionResult) {
 			    return "{ \"status\": \"error\" }";
             }
 
 			return "{ \"status\": \"success\" }";
 
-		} catch (IllegalArgumentException illegalArgumentException) {
-			// Should implement custom exception handler, as "server.error.include-message=always" 
-			// workaround may disclose sensitive internal exceptions
-			// Source: https://stackoverflow.com/questions/62561211/spring-responsestatusexception-does-not-return-reason
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Illegal parameters.");
-		} catch (Exception exception) {
-            // Generic, catch-all exception (not good, but it works now)
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Illegal parameters.");
-		}
+		} 
 	}
 }
