@@ -68,7 +68,6 @@ public class AuthController {
 			String roles = userDetails.getAuthorities().stream()
 			.map(GrantedAuthority::getAuthority)
 			.collect(Collectors.joining(" "));
-			System.out.println(roles);
 			claims.put(WebSecurityConfig.AUTHORITIES_CLAIM_NAME, roles);
 			claims.put("userId", "" + user.getId());
 			String jwt = jwtHelper.createJwtForClaims(email, claims);
@@ -76,12 +75,9 @@ public class AuthController {
 			return new LoginResult(jwt);
 			}
 		} catch (UsernameNotFoundException e) {
-			System.out.println("no user");
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
 		}
-		
-		
-		System.out.println("no credentials");
+
 		throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
 	}
 
@@ -94,8 +90,7 @@ public class AuthController {
 	){
 		User existing = userService.findByEmail(email);
         if (existing != null) {
-			System.out.println("account already exists");
-			return "account already exists";
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account already exists");
         }
 		UserDto userDto = new UserDto();
 		userDto.setName(fullName);

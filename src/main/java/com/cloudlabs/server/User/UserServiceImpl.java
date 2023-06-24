@@ -1,6 +1,5 @@
 package com.cloudlabs.server.user;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,13 +36,13 @@ public class UserServiceImpl implements UserService  {
         // encrypt the password using spring security
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        Role role = roleRepository.findByName("USER");
-        if(role == null){
-            role = checkRoleExist();
-        }
-        System.out.print(role.getName());
-        user.setRoles(Arrays.asList(role));
-        System.out.println(user.getRoles());
+        setNewRole("USER", user);
+        setNewRole("TUTOR", user);
+        
+        //Test
+        System.out.println(user.getRoles().get(0));
+        System.out.println(user.getRoles().get(1));
+        
         userRepository.save(user);
     }
 
@@ -67,10 +66,21 @@ public class UserServiceImpl implements UserService  {
         return userDto;
     }
 
-    private Role checkRoleExist(){
+    private Role checkRoleExist(String roleString){
         Role role = new Role();
-        role.setName("USER");
+        role.setName(roleString);
         return roleRepository.save(role);
+    }
+
+    private void setNewRole(String newRole, User user){
+        Role role = roleRepository.findByName(newRole);
+        if(role == null){
+            role = checkRoleExist(newRole);
+        }
+        List<Role> newRoleList = user.getRoles();
+        newRoleList.add(role);
+        user.setRoles(newRoleList);
+
     }
 
     @Override
