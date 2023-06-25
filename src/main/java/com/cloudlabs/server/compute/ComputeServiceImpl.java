@@ -1,6 +1,8 @@
 package com.cloudlabs.server.compute;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,9 @@ import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
 import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.compute.v1.Items;
+import com.google.cloud.compute.v1.ListMachineTypesRequest;
+import com.google.cloud.compute.v1.MachineType;
+import com.google.cloud.compute.v1.MachineTypesClient;
 import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
@@ -275,6 +280,29 @@ public class ComputeServiceImpl implements ComputeService {
 
             // Operation response = addressClient.insertAsync(request).get();
             addressClient.deleteAsync(request);
+        }
+    }
+
+    @Override
+    public List<MachineTypeDTO> listMachineTypes(String query) throws IOException {
+        try (MachineTypesClient machineTypesClient = MachineTypesClient.create()) {
+
+
+            ListMachineTypesRequest listMachineTypesRequest = ListMachineTypesRequest.newBuilder()
+                .setProject(project)
+                .setZone(zone)
+                .setMaxResults(10)
+                .setFilter((query == null) ? "" : String.format("name eq ^%s.*", query))
+                .build();
+
+            List<MachineTypeDTO> machineTypes = new ArrayList<MachineTypeDTO>();
+            for (MachineType machineType : machineTypesClient.list(listMachineTypesRequest).iterateAll()) {
+                MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+                machineTypeDTO.setName(machineType.getName());
+                machineTypes.add(machineTypeDTO);
+            }
+
+            return machineTypes;
         }
     }
 }

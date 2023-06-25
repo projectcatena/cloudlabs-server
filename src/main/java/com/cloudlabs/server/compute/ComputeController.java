@@ -1,18 +1,22 @@
 package com.cloudlabs.server.compute;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 
 @RestController
 @RequestMapping("/compute")
@@ -31,6 +35,14 @@ public class ComputeController {
 		if (response == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 		}
+
+		return response;
+	}
+
+	@GetMapping("/list")
+	public List<MachineTypeDTO> listMachineTypes(@RequestParam(required = false) String query) throws IOException {
+
+		List<MachineTypeDTO> response = computeService.listMachineTypes(query);
 
 		return response;
 	}

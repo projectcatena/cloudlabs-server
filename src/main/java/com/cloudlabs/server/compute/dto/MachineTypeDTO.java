@@ -1,5 +1,9 @@
 package com.cloudlabs.server.compute.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
 public class MachineTypeDTO {
     private String name;
     private String zone;
