@@ -10,4 +10,6 @@ public interface UserService {
     List<UserDto> findAllUsers();
 
     String getAuthorities();
+
+    String getUsername(User user);
 }

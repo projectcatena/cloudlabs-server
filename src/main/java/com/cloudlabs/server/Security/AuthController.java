@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,7 +30,7 @@ import com.cloudlabs.server.user.UserService;
  * @author imesha
  */
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
-@RestController
+@RestController()
 public class AuthController {
 	
 	private final JwtHelper jwtHelper;
@@ -71,11 +72,11 @@ public class AuthController {
 			claims.put(WebSecurityConfig.AUTHORITIES_CLAIM_NAME, roles);
 			claims.put("userId", "" + user.getId());
 			String jwt = jwtHelper.createJwtForClaims(email, claims);
-			
+			System.out.println(jwt);
 			return new LoginResult(jwt);
 			}
 		} catch (UsernameNotFoundException e) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found");
 		}
 
 		throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
@@ -83,21 +84,21 @@ public class AuthController {
 
 	// handler method to handle register user form submit request
     @PostMapping(path = "signup", consumes = (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
-    public String registration(
-		@RequestParam String fullName,
+    public ResponseEntity<String> registration(
+		@RequestParam String name,
 		@RequestParam String email,
 		@RequestParam String password
 	){
 		User existing = userService.findByEmail(email);
         if (existing != null) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account already exists");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account already exists");
         }
 		UserDto userDto = new UserDto();
-		userDto.setName(fullName);
+		userDto.setName(name);
 		userDto.setEmail(email);
 		userDto.setPassword(password);
         
         userService.saveUser(userDto);
-        return "Redirect:/login";
+        return ResponseEntity.ok("Successful Registration");
     }
 }

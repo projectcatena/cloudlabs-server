@@ -3,13 +3,19 @@ package com.cloudlabs.server.user;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.log4j.Log4j2;
 
+
+@Log4j2
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RestController
 @RequestMapping()
@@ -35,7 +41,7 @@ public class UserController {
     }
 	
 	@GetMapping(path = "module")
-	@PreAuthorize("hasAuthority('USER')")
+	@PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
 	public String getModuleUser(Model model) {
 		List<UserDto> users = userService.findAllUsers();
         model.addAttribute("users", users);
@@ -48,7 +54,7 @@ public class UserController {
 	}
 
 	@GetMapping(path = "users")
-	@PreAuthorize("hasAuthority('TUTOR')")
+	@PreAuthorize("hasAnyAuthority('TUTOR','ADMIN')")
 	public String listRegisteredUsers(Model model){
 		System.out.print("in");
         List<UserDto> users = userService.findAllUsers();
@@ -61,5 +67,19 @@ public class UserController {
 		return "login";
 	}
 	
-	
+	@GetMapping(path = "account")
+	@PreAuthorize("hasAnyAuthority('USER','TUTOR',ADMIN)")
+	public String profile() {
+		SecurityContext securityContext = SecurityContextHolder.getContext();
+		Authentication authentication = securityContext.getAuthentication();
+		CustomUserDetailsService userService = (CustomUserDetailsService) authentication.getPrincipal();
+		log.info("username : {}"); // change to return user details
+		return "username";
+	}
+
+	@GetMapping(path = "admin")
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public String adminPage() {
+		return "admin page";
+	}
 }

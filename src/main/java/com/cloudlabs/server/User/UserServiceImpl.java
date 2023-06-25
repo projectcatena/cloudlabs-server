@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.cloudlabs.server.role.ERole;
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 
@@ -19,13 +20,16 @@ public class UserServiceImpl implements UserService  {
     private UserRepository userRepository;
     private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
+    private Collection<? extends GrantedAuthority> authorities;
 
     public UserServiceImpl(UserRepository userRepository,
                         RoleRepository roleRepository,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        Collection<? extends GrantedAuthority> authorities) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authorities = authorities;
     }
 
     @Override
@@ -36,8 +40,8 @@ public class UserServiceImpl implements UserService  {
         // encrypt the password using spring security
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        setNewRole("USER", user);
-        setNewRole("TUTOR", user);
+        setNewRole(ERole.USER, user);
+        setNewRole(ERole.TUTOR, user);
         
         //Test
         System.out.println(user.getRoles().get(0));
@@ -66,13 +70,13 @@ public class UserServiceImpl implements UserService  {
         return userDto;
     }
 
-    private Role checkRoleExist(String roleString){
+    private Role checkRoleExist(ERole roleString){
         Role role = new Role();
         role.setName(roleString);
         return roleRepository.save(role);
     }
 
-    private void setNewRole(String newRole, User user){
+    private void setNewRole(ERole newRole, User user){
         Role role = roleRepository.findByName(newRole);
         if(role == null){
             role = checkRoleExist(newRole);
@@ -89,7 +93,7 @@ public class UserServiceImpl implements UserService  {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         System.out.println(authentication);
         // Retrieve the authorities for the currently authenticated user
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        authorities = authentication.getAuthorities();
         
         // Mapping authorities
         String roles = authorities.stream()
@@ -97,5 +101,9 @@ public class UserServiceImpl implements UserService  {
 					.collect(Collectors.joining(" "));
         
         return roles;
+    }
+
+    public String getUsername(User user) {
+        return user.getName();
     }
 }
