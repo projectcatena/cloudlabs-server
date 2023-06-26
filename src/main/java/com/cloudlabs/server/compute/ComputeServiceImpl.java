@@ -61,7 +61,7 @@ public class ComputeServiceImpl implements ComputeService {
 			// https://cloud.google.com/compute/docs/images
 			// diskSizeGb: storage size of the boot disk to attach to the instance.
 			// networkName: network interface to associate with the instance.
-			computeInstanceMetadata.setDiskSizeGb(10);
+			computeInstanceMetadata.setDiskSizeGb(60); // 60GB minimum for Windows
             computeInstanceMetadata.setNetworkName("default");
 
 			MachineTypeDTO machineTypeDTO = computeInstanceMetadata.getMachineType();
@@ -69,8 +69,17 @@ public class ComputeServiceImpl implements ComputeService {
             String machineType = String.format("zones/%s/machineTypes/%s", machineTypeDTO.getZone(), machineTypeDTO.getName());
 
 			SourceImageDTO sourceImageDTO = computeInstanceMetadata.getSourceImage();
-			String sourceImage = String
-					.format("projects/%s/global/images/family/%s", sourceImageDTO.getProject(), sourceImageDTO.getName());
+
+            String sourceImage;
+
+            if (sourceImageDTO.getProject() == null) {
+                // projects/cloudlabs-387310/global/images/windows-server-2019
+                sourceImage = String
+                    .format("projects/%s/global/images/%s", project, sourceImageDTO.getName());
+            } else {
+                sourceImage = String
+                    .format("projects/%s/global/images/family/%s",  sourceImageDTO.getProject(), sourceImageDTO.getName());
+            }
 
 			long diskSizeGb = computeInstanceMetadata.getDiskSizeGb();
 			String networkName = computeInstanceMetadata.getNetworkName();

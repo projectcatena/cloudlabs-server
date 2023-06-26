@@ -28,15 +28,41 @@ public class ComputeControllerTests {
     private ComputeService computeService;
 
     @Test
-    void createComputeEngine_whenParametersGiven() throws Exception {
+    void createComputeEngine_whenPublicImage() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
             .contentType(MediaType.APPLICATION_JSON).content("""
                     {
-                        \"instanceName\": \"test\",
+                        \"instanceName\": \"test-public-image\",
                         \"script\": \"\",
                         \"sourceImage\": {
                             \"name\": \"debian-11\",
                             \"project\": \"debian-cloud\"
+                        },
+                        \"machineType\": {
+                            \"name\": \"e2-micro\"
+                        }
+                    }
+                    """))
+            .andExpect(MockMvcResultMatchers.status().isOk())
+            .andReturn();
+                    
+        // Delete instance and release its public IP Address after test
+        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(response.getAddress().getName());
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void createComputeEngine_whenCustomImage() throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/compute/create")
+            .contentType(MediaType.APPLICATION_JSON).content("""
+                    {
+                        \"instanceName\": \"test-custom-image\",
+                        \"script\": \"\",
+                        \"sourceImage\": {
+                            \"name\": \"windows-server-2019\"
                         },
                         \"machineType\": {
                             \"name\": \"e2-micro\"
