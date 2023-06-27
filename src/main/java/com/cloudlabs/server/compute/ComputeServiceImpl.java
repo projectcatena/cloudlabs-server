@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cloudlabs.server.compute.dto.AddressDTO;
@@ -41,6 +42,9 @@ public class ComputeServiceImpl implements ComputeService {
 	static String project = "cloudlabs-387310";
 	static String zone = "asia-southeast1-b"; 
 	static String region = "asia-southeast1";
+
+    @Autowired
+    private ComputeRepository computeRepository;
 
     @Override
     public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
@@ -175,6 +179,10 @@ public class ComputeServiceImpl implements ComputeService {
             ComputeDTO responseComputeDTO = new ComputeDTO();
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(publicIPAddressDTO);
+
+            // Successful Instance Creation, save to Database
+            Compute compute = new Compute(instanceName, machineTypeDTO.getName(), publicIPAddressDTO.getIpv4Address());
+            computeRepository.save(compute);
 
 			return responseComputeDTO;
 		} catch (Exception exception) {
@@ -313,5 +321,29 @@ public class ComputeServiceImpl implements ComputeService {
 
             return machineTypes;
         }
+    }
+
+    @Override
+    public List<ComputeDTO> listComputeInstances() {
+        List<Compute> computeInstances = computeRepository.findAll();
+
+        List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
+
+        for ( Compute compute : computeInstances) {
+            AddressDTO addressDTO = new AddressDTO();
+            addressDTO.setIpv4Address(compute.getIpv4Address());
+
+            MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+            machineTypeDTO.setName(compute.getMachineType());
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setAddress(addressDTO);
+            computeDTO.setInstanceName(compute.getInstanceName());
+            computeDTO.setMachineType(machineTypeDTO);
+
+            computeDTOs.add(computeDTO);
+        }
+
+        return computeDTOs;
     }
 }

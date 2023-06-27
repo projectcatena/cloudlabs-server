@@ -1,9 +1,11 @@
 package com.cloudlabs.server.compute.dto;
 
-enum AddressStatus {
 
-}
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+
+@JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
 public class AddressDTO {
    private String name;
    private String ipv4Address;

@@ -3,7 +3,7 @@ package com.cloudlabs.server.compute.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-@JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
+@JsonInclude(Include.NON_DEFAULT) // Ignore null fields, and default values (like 0 for long type)
 public class ComputeDTO {
     private SourceImageDTO sourceImage;
     private MachineTypeDTO machineType;

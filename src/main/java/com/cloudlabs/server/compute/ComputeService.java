@@ -16,4 +16,5 @@ public interface ComputeService {
     void assignStaticExternalIPAddress(String instanceName, String ipAddress, String networkInterfaceName) throws IOException, InterruptedException, ExecutionException;
     void releaseStaticExternalIPAddress(String ipAddress) throws IOException;
     List<MachineTypeDTO> listMachineTypes(String query) throws IOException;
+    List<ComputeDTO> listComputeInstances();
 }

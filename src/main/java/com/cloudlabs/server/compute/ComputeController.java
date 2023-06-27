@@ -39,10 +39,18 @@ public class ComputeController {
 		return response;
 	}
 
-	@GetMapping("/list")
+	@GetMapping("/list-machine-types")
 	public List<MachineTypeDTO> listMachineTypes(@RequestParam(required = false) String query) throws IOException {
 
 		List<MachineTypeDTO> response = computeService.listMachineTypes(query);
+
+		return response;
+	}
+
+	@GetMapping("/list")
+	public List<ComputeDTO> listComputeInstances() {
+
+        List<ComputeDTO> response = computeService.listComputeInstances();
 
 		return response;
 	}
