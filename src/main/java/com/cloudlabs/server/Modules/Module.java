@@ -25,7 +25,7 @@ public class Module {
     @Column(name = "description", length = 1000, nullable = false)
     private String moduleDescription;
 
-    public Long getModuleID() {
+    public Long getModuleId() {
         return this.moduleId;
     }
 

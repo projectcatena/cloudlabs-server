@@ -11,5 +11,5 @@ import java.util.List;
 import java.util.Set;
 
 public interface ModuleRepository extends JpaRepository<Module, Long> {
-    
+    Module findByModuleId(Long moduleId);
 }
