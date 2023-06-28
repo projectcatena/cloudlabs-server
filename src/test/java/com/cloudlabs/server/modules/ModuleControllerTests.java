@@ -171,6 +171,8 @@ public class ModuleControllerTests {
         .contentType(MediaType.APPLICATION_JSON).content("""
                 {
                     \"subtitle\": \"new subtitle\"
+                    \"title\": \"old title\",
+                    \"description\": \"old description\"
                 }
                 """)).andExpect(MockMvcResultMatchers.status().isOk());
     }
