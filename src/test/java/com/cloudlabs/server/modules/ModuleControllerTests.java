@@ -93,8 +93,10 @@ public class ModuleControllerTests {
 
     @Test
     void getModuleById_whenModuleNotFound() throws Exception {
-        // Perform the GET request with an invalid module ID
-        this.mockMvc.perform(MockMvcRequestBuilders.get("/Modules/{moduleId}", "invalid-id"))
+        Long nonExistentModuleId = 999L; // Non-existent module ID
+
+        // Perform the GET request with an Non-existent module ID
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/Modules/{moduleId}", nonExistentModuleId))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
