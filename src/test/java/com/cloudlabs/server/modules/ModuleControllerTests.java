@@ -54,7 +54,6 @@ public class ModuleControllerTests {
     void getAllModules() throws Exception {
         // Create a module with known values
         Module module = new Module();
-        module.setModuleId(1L);
         module.setModuleSubtitle("test");
         module.setModuleName("test");
         module.setModuleDescription("for testing");
@@ -70,13 +69,12 @@ public class ModuleControllerTests {
     void getModuleById_whenValidModuleIdGiven() throws Exception {
         // Create a module with known values
         Module module = new Module();
-        module.setModuleId(1L);
         module.setModuleSubtitle("test");
         module.setModuleName("test");
         module.setModuleDescription("for testing");
 
         // Save the module to the repository
-        this.repository.save(module);
+        repository.save(module);
 
         // Perform the GET request to retrieve the module by ID
         this.mockMvc.perform(MockMvcRequestBuilders.get("/Modules/{moduleId}", module.getModuleId()))
@@ -104,7 +102,6 @@ public class ModuleControllerTests {
     void deleteModule_whenValidModuleIdGiven() throws Exception {
         // Create a module with known values
         Module module = new Module();
-        module.setModuleId(1L);
         module.setModuleSubtitle("test");
         module.setModuleName("test");
         module.setModuleDescription("for testing");
@@ -136,7 +133,6 @@ public class ModuleControllerTests {
     void updateModule_whenValidModuleIdAndValidDataGiven() throws Exception {
         // Create a module with known values
         Module module = new Module();
-        module.setModuleId(1L);
         module.setModuleSubtitle("old subtitle");
         module.setModuleName("old title");
         module.setModuleDescription("old description");
@@ -159,7 +155,7 @@ public class ModuleControllerTests {
     void updateModule_whenValidModuleIdAndPartialDataGiven() throws Exception {
         // Create a module with known values
         Module module = new Module();
-        module.setModuleId(1L);
+
         module.setModuleSubtitle("old subtitle");
         module.setModuleName("old title");
         module.setModuleDescription("old description");
