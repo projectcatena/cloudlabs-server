@@ -156,7 +156,7 @@ public class ModuleControllerTests {
     }
 
     @Test
-    void updateModule_whenValidIdandPartialDataGiven() throws Exception {
+    void updateModule_whenValidModuleIdAndPartialDataGiven() throws Exception {
         // Create a module with known values
         Module module = new Module();
         module.setModuleId(1L);
@@ -167,12 +167,13 @@ public class ModuleControllerTests {
         // Save the module to the repository
         this.repository.save(module);
 
+        // Prepare the request body with updated data
         this.mockMvc.perform(MockMvcRequestBuilders.put("/Modules/update/{moduleId}", module.getModuleId())
         .contentType(MediaType.APPLICATION_JSON).content("""
                 {
-                    \"subtitle\": \"new subtitle\"
-                    \"title\": \"old title\",
-                    \"description\": \"old description\"
+                    \"subtitle\": \"new subtitle\",
+                    \"title\": \" \",
+                    \"description\": \" \"
                 }
                 """)).andExpect(MockMvcResultMatchers.status().isOk());
     }
