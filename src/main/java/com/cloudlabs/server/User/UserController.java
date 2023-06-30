@@ -3,9 +3,6 @@ package com.cloudlabs.server.user;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,18 +65,8 @@ public class UserController {
 	}
 	
 	@GetMapping(path = "account")
-	@PreAuthorize("hasAnyAuthority('USER','TUTOR',ADMIN)")
+	@PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
 	public String profile() {
-		SecurityContext securityContext = SecurityContextHolder.getContext();
-		Authentication authentication = securityContext.getAuthentication();
-		CustomUserDetailsService userService = (CustomUserDetailsService) authentication.getPrincipal();
-		log.info("username : {}"); // change to return user details
 		return "username";
-	}
-
-	@GetMapping(path = "admin")
-	@PreAuthorize("hasAuthority('ADMIN')")
-	public String adminPage() {
-		return "admin page";
 	}
 }

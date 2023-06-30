@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,105 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class WebSecurityConfig{
 
 	public static final String AUTHORITIES_CLAIM_NAME = "roles";
-	
-	//private final PasswordEncoder passwordEncoder;
 
-	//@Autowired
-    //private AuthenticationSuccessHandlerImpl successHandler;
-
-	//@Autowired
-	//private WebApplicationContext applicationContext;
-
-	//@Autowired
-    //private DataSource dataSource;
-
-	//private UserDetailsService userDetailsService;
-	
-	/*
-	public WebSecurityConfig(PasswordEncoder passwordEncoder) {
-		this.passwordEncoder = passwordEncoder;
-	}
-	 */
-	/*
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http
-				.cors()
-				.and()
-				.csrf().disable()
-				.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-				.and()
-				.authorizeRequests(configurer ->
-						configurer
-								.antMatchers(
-										"/error",
-										"/login"
-								)
-								.permitAll()
-								.anyRequest()
-								.authenticated()
-				);
-		// JWT Validation Configuration
-        http.oauth2ResourceServer()
-                .jwt()
-                .jwtAuthenticationConverter(authenticationConverter());
-	}
-	 */
-	
-	/*
-	@PostConstruct
-	public void completeSetup() {
-		userDetailsService = applicationContext.getBean(UserDetailsService.class);
-	}
-	 */
-	/*
-	@Bean
-    public UserDetailsManager users(HttpSecurity http) throws Exception {
-        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManagerBuilder.class)
-            .userDetailsService(userDetailsService)
-            .passwordEncoder(passwordEncoder)
-            .and()
-            .build();
-
-        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
-        jdbcUserDetailsManager.setAuthenticationManager(authenticationManager);
-        return jdbcUserDetailsManager;
-    }
- */
-	/* Real credentials take from database 
-	@Bean
-	@Override
-	protected UserDetailsService userDetailsService() {
-		UserDetails user1 = org.springframework.security.core.userdetails.User
-				.withUsername("user1@gmail.com")
-				.authorities("USER")
-				.passwordEncoder(passwordEncoder::encode)
-				.password("1234")
-				.build();
-		
-		UserDetails user2 = org.springframework.security.core.userdetails.User
-		.withUsername("admin@gmail.com")
-		.authorities("ADMIN", "USER")
-		.passwordEncoder(passwordEncoder::encode)
-		.password("1234")
-		.build();
-
-		UserDetails user3 = org.springframework.security.core.userdetails.User
-		.withUsername("tutor@gmail.com")
-		.authorities("TUTOR", "USER")
-		.passwordEncoder(passwordEncoder::encode)
-		.password("1234")
-		.build();
-		
-		InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-		manager.createUser(user1);
-		manager.createUser(user2);
-		manager.createUser(user3);
-		return manager;
-	}
-	*/
-	
-	
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -133,7 +36,8 @@ public class WebSecurityConfig{
 		*/
 
         http.authorizeRequests()
-            .antMatchers("/login", "/signup", "/error")
+			.antMatchers(HttpMethod.OPTIONS, "/**").permitAll() //allow CORS option call
+            .antMatchers("/login", "/signup", "/error", "/admin/list")
             .permitAll()
 			.anyRequest()
 			.authenticated()

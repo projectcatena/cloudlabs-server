@@ -4,11 +4,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudlabs.server.role.ERole;
 import com.cloudlabs.server.role.Role;
@@ -39,13 +41,10 @@ public class UserServiceImpl implements UserService  {
         user.setEmail(userDto.getEmail());
         // encrypt the password using spring security
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-
+        // set account roles
         setNewRole(ERole.USER, user);
-        setNewRole(ERole.TUTOR, user);
-        
-        //Test
-        System.out.println(user.getRoles().get(0));
-        System.out.println(user.getRoles().get(1));
+        setNewRole(ERole.TUTOR, user); //remove
+        setNewRole(ERole.ADMIN, user); //remove
         
         userRepository.save(user);
     }
@@ -67,6 +66,12 @@ public class UserServiceImpl implements UserService  {
         UserDto userDto = new UserDto();
         userDto.setName(user.getName());
         userDto.setEmail(user.getEmail());
+        
+        // for admin add roles
+        if(user.getRoles() != null){
+            userDto.setRoles(user.getRoles());
+        }
+        
         return userDto;
     }
 
@@ -76,15 +81,36 @@ public class UserServiceImpl implements UserService  {
         return roleRepository.save(role);
     }
 
-    private void setNewRole(ERole newRole, User user){
+    public Boolean setNewRole(ERole newRole, User user){
         Role role = roleRepository.findByName(newRole);
         if(role == null){
             role = checkRoleExist(newRole);
         }
+        if (user.getRoles().contains(role)) {
+            return false;
+        }
+        
         List<Role> newRoleList = user.getRoles();
         newRoleList.add(role);
         user.setRoles(newRoleList);
+        userRepository.save(user);
+        return true;
+    }
 
+    public void deleteRole(ERole eRole, User user){
+        try { //check if role exists && check if user has role
+            Role role = roleRepository.findByName(eRole);
+            if (user.getRoles().contains(role)) {
+            user.getRoles().remove(role);
+            userRepository.save(user);
+            }
+            else{
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User does not have this role");
+            }
+        } catch (Exception e) {
+            // TODO: handle exception
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No such role");
+        }
     }
 
     @Override

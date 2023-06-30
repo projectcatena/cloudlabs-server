@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +23,7 @@ import com.cloudlabs.server.security.resource.LoginResult;
 import com.cloudlabs.server.user.CustomUserDetailsService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.UserService;
 
 /**
@@ -31,6 +33,7 @@ import com.cloudlabs.server.user.UserService;
  */
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RestController()
+@RequestMapping
 public class AuthController {
 	
 	private final JwtHelper jwtHelper;
@@ -38,16 +41,19 @@ public class AuthController {
 	private final PasswordEncoder passwordEncoder;
 	private UserService userService;
 	private CustomUserDetailsService customUserDetailsService;
+	private UserRepository userRepository;
 	
 	public AuthController(JwtHelper jwtHelper,
 			PasswordEncoder passwordEncoder,
 			UserService userService,
-			CustomUserDetailsService customUserDetailsService) {
+			CustomUserDetailsService customUserDetailsService,
+			UserRepository userRepository) {
 		this.jwtHelper = jwtHelper;
 		//this.userDetailsService = userDetailsService;
 		this.passwordEncoder = passwordEncoder;
 		this.userService = userService;
 		this.customUserDetailsService = customUserDetailsService;
+		this.userRepository= userRepository;
 	}
 	
 	// handler method to handle user login request
@@ -97,8 +103,10 @@ public class AuthController {
 		userDto.setName(name);
 		userDto.setEmail(email);
 		userDto.setPassword(password);
-        
+
         userService.saveUser(userDto);
         return ResponseEntity.ok("Successful Registration");
     }
+
+	
 }

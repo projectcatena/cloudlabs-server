@@ -1,8 +1,12 @@
 package com.cloudlabs.server.user;
 
 
+import java.util.List;
+
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
+
+import com.cloudlabs.server.role.Role;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,8 +17,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+//@JsonInclude(Include.NON_DEFAULT)
 public class UserDto
 {
+    
     private Long id;
     @NotEmpty
     private String name;
@@ -23,4 +29,6 @@ public class UserDto
     private String email;
     @NotEmpty(message = "Password should not be empty")
     private String password;
+
+    private List<Role> roles;
 }
