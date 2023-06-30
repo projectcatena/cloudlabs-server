@@ -109,4 +109,14 @@ public class ComputeControllerTests {
                     """))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
+
+    @Test
+    void deleteComputeEngine_whenParametersGiven() throws Exception {
+        ComputeDTO computeDTO = new ComputeDTO();
+        computeDTO.setInstanceName("windows-server-2019");
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/delete")
+            .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(computeDTO)))
+            .andExpect(MockMvcResultMatchers.status().isOk());
+    }
 }

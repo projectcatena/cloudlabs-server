@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -108,9 +111,22 @@ public class ComputeServiceImpl implements ComputeService {
 									.build())
 					.build();
 
+            // Reserve Public IP Address for the instance
+            String addressResourceName = String.format("%s-public-ip", instanceName);
+			reserveStaticExternalIPAddress(addressResourceName);
+
+            // Get value of newly created external IP address
+            AddressDTO publicIPAddressDTO = getExternalStaticIPAdress(addressResourceName);
+
+            // Assign created public IP at instance creation
+            AccessConfig addPublicIpAddressConfig = AccessConfig.newBuilder()
+                    .setNatIP(publicIPAddressDTO.getIpv4Address())
+                    .build();
+
 			// Use the network interface provided in the networkName argument.
 			NetworkInterface networkInterface = NetworkInterface.newBuilder()
                     .setName(networkName)
+                    .addAccessConfigs(addPublicIpAddressConfig)
 					.build();
 
             ServiceAccount serviceAccount = ServiceAccount.newBuilder()
@@ -158,23 +174,8 @@ public class ComputeServiceImpl implements ComputeService {
 				return null;
 			}
 
-            /*
-             * Allow the instance to be publicly accessible, only if the instance creation is successful.
-             * 
-             * Steps:
-             * 1. Reserve a static external IP address
-             * 2. Get value of newly created external IP address
-             * 2. Assign the static external IP address to the instance
-             */
-            // Reserve Public IP Address for the instance
-            String addressResourceName = String.format("%s-public-ip", instanceName);
-			reserveStaticExternalIPAddress(addressResourceName);
-
-            // Get value of newly created external IP address
-            AddressDTO publicIPAddressDTO = getExternalStaticIPAdress(addressResourceName);
-
             // Attach the Public IP Address to the instance's default network interface: nic0
-            assignStaticExternalIPAddress(instanceName, publicIPAddressDTO.getIpv4Address(), "nic0");
+            // assignStaticExternalIPAddress(instanceName, publicIPAddressDTO.getIpv4Address(), "nic0");
 
             ComputeDTO responseComputeDTO = new ComputeDTO();
             responseComputeDTO.setInstanceName(instanceName);
@@ -191,7 +192,7 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public ComputeDTO deleteInstance(String instanceName) {
+    public ComputeDTO deleteInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
         try (InstancesClient instancesClient = InstancesClient.create()) {
 
             // Describe which instance is to be deleted.
@@ -209,14 +210,13 @@ public class ComputeServiceImpl implements ComputeService {
                 return null;
             }
 
+            computeRepository.deleteByInstanceName(instanceName);
+
             ComputeDTO computeDTO = new ComputeDTO();
             computeDTO.setInstanceName(instanceName);
             computeDTO.setStatus(response.getStatus().name());
 
             return computeDTO;
-
-        } catch (Exception exception) {
-            return null;
         }
     }
 

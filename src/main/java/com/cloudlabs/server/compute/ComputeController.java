@@ -54,4 +54,12 @@ public class ComputeController {
 
 		return response;
 	}
+
+    @PostMapping("/delete")
+    public ComputeDTO deleteComputeInstance(@RequestBody ComputeDTO computeDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(String.format("%s-public-ip", response.getInstanceName()));
+
+        return response;
+    }
 }
