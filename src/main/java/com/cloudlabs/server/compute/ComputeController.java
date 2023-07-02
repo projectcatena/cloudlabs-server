@@ -1,10 +1,11 @@
 package com.cloudlabs.server.compute;
 
+import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,20 +16,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.cloudlabs.server.compute.dto.ComputeDTO;
-import com.cloudlabs.server.compute.dto.MachineTypeDTO;
-
 @RestController
 @RequestMapping("/compute")
 public class ComputeController {
 
-    @Autowired
-    ComputeService computeService;
+	@Autowired
+	ComputeService computeService;
 
-	// Create a new public instance with the provided "instanceName" value in the specified
-	// project and zone.
+	// Create a new public instance with the provided "instanceName" value in the
+	// specified project and zone.
 	@PostMapping("/create")
-	public ComputeDTO create(@RequestBody ComputeDTO computeDTO) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+	public ComputeDTO create(@RequestBody ComputeDTO computeDTO)
+			throws IOException, InterruptedException, ExecutionException,
+			TimeoutException {
 
 		ComputeDTO response = computeService.createPublicInstance(computeDTO);
 
@@ -40,7 +40,8 @@ public class ComputeController {
 	}
 
 	@GetMapping("/list-machine-types")
-	public List<MachineTypeDTO> listMachineTypes(@RequestParam(required = false) String query) throws IOException {
+	public List<MachineTypeDTO> listMachineTypes(@RequestParam(required = false) String query)
+			throws IOException {
 
 		List<MachineTypeDTO> response = computeService.listMachineTypes(query);
 
@@ -50,16 +51,28 @@ public class ComputeController {
 	@GetMapping("/list")
 	public List<ComputeDTO> listComputeInstances() {
 
-        List<ComputeDTO> response = computeService.listComputeInstances();
+		List<ComputeDTO> response = computeService.listComputeInstances();
 
 		return response;
 	}
 
-    @PostMapping("/delete")
-    public ComputeDTO deleteComputeInstance(@RequestBody ComputeDTO computeDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
-        computeService.releaseStaticExternalIPAddress(String.format("%s-public-ip", response.getInstanceName()));
+	@GetMapping("/instance")
+	public ComputeDTO getComputeInstance(@RequestParam String instanceName)
+			throws IOException {
 
-        return response;
-    }
+		ComputeDTO response = computeService.getComputeInstance(instanceName);
+
+		return response;
+	}
+
+	@PostMapping("/delete")
+	public ComputeDTO deleteComputeInstance(@RequestBody ComputeDTO computeDTO)
+			throws InterruptedException, ExecutionException, TimeoutException,
+			IOException {
+		ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
+		computeService.releaseStaticExternalIPAddress(
+				String.format("%s-public-ip", response.getInstanceName()));
+
+		return response;
+	}
 }
