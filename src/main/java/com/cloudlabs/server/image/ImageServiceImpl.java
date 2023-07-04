@@ -19,7 +19,6 @@ import com.cloudlabs.server.image.dto.ImageDTO;
 import com.cloudlabs.server.image.enums.DeleteImageStatus;
 import com.cloudlabs.server.image.enums.ImageStatus;
 import com.google.api.gax.longrunning.OperationFuture;
-import com.google.api.gax.rpc.NotFoundException;
 import com.google.auth.Credentials;
 import com.google.auth.ServiceAccountSigner;
 import com.google.auth.oauth2.GoogleCredentials;

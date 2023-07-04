@@ -1,54 +1,42 @@
 package com.cloudlabs.server.compute;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name="compute")
 public class Compute {
-    private String machineType;
-    private String sourceImage;
-    private long diskSizeGb;
-    private String networkName;
+    @Id
+    @GeneratedValue
+    private long id;
+
+    @Column(name = "instance_name", nullable = false)
     private String instanceName;
-    private String startupScript;
 
-    public Compute() {}
+    @Column(name = "machine_type", nullable = false)
+    private String machineType;
 
-    public Compute(String machineType, String sourceImage, long diskSizeGb, String networkName, String instanceName, String startupScript) {
-        this.machineType = machineType;
-        this.sourceImage = sourceImage;
-        this.diskSizeGb = diskSizeGb;
-        this.networkName = networkName;
+    @Column(name = "external_ip_address", nullable = false)
+    private String ipv4Address;
+
+    public Compute() {
+    }
+
+    public Compute(String instanceName, String machineType, String ipv4Address) {
         this.instanceName = instanceName;
-        this.startupScript = startupScript;
-    }
-
-    public String getMachineType() {
-        return this.machineType;
-    }
-
-    public void setMachineType(String machineType) {
         this.machineType = machineType;
+        this.ipv4Address = ipv4Address;
     }
 
-    public String getSourceImage() {
-        return this.sourceImage;
+    public long getId() {
+        return this.id;
     }
 
-    public void setSourceImage(String sourceImage) {
-        this.sourceImage = sourceImage;
-    }
-
-    public long getDiskSizeGb() {
-        return this.diskSizeGb;
-    }
-
-    public void setDiskSizeGb(long diskSizeGb) {
-        this.diskSizeGb = diskSizeGb;
-    }
-
-    public String getNetworkName() {
-        return this.networkName;
-    }
-
-    public void setNetworkName(String networkName) {
-        this.networkName = networkName;
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getInstanceName() {
@@ -59,12 +47,20 @@ public class Compute {
         this.instanceName = instanceName;
     }
 
-    public String getStartupScript() {
-        return this.startupScript;
+    public String getMachineType() {
+        return this.machineType;
     }
 
-    public void setStartupScript(String startupScript) {
-        this.startupScript = startupScript;
+    public void setMachineType(String machineType) {
+        this.machineType = machineType;
+    }
+
+    public String getIpv4Address() {
+        return this.ipv4Address;
+    }
+
+    public void setIpv4Address(String ipv4Address) {
+        this.ipv4Address = ipv4Address;
     }
 
 }
