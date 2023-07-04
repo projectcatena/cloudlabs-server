@@ -1,13 +1,11 @@
 package com.cloudlabs.server.security;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.cloudlabs.server.WebSecurityConfig;
-import com.cloudlabs.server.security.resource.LoginResult;
 import com.cloudlabs.server.user.CustomUserDetailsService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserDto;
@@ -42,25 +38,30 @@ public class AuthController {
 	private UserService userService;
 	private CustomUserDetailsService customUserDetailsService;
 	private UserRepository userRepository;
+	private AuthService authService;
 	
 	public AuthController(JwtHelper jwtHelper,
 			PasswordEncoder passwordEncoder,
 			UserService userService,
 			CustomUserDetailsService customUserDetailsService,
-			UserRepository userRepository) {
+			UserRepository userRepository,
+			AuthService authService) {
 		this.jwtHelper = jwtHelper;
 		//this.userDetailsService = userDetailsService;
 		this.passwordEncoder = passwordEncoder;
 		this.userService = userService;
 		this.customUserDetailsService = customUserDetailsService;
 		this.userRepository= userRepository;
+		this.authService = authService;
 	}
 	
 	// handler method to handle user login request
 	@PostMapping(path = "login", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
-	public LoginResult login(
+	public ResponseEntity<String> login(
 			@RequestParam String email,
-			@RequestParam String password) {
+			@RequestParam String password,
+			HttpServletResponse response
+			) {
 		
 		//UserDetails userDetails;
 		try {
@@ -68,18 +69,10 @@ public class AuthController {
 			User user = userService.findByEmail(email); // userRepository.findbyemail(email)
 
 			if (passwordEncoder.matches(password, user.getPassword())) {
-			Map<String, String> claims = new HashMap<>();
-			claims.put("email", email);
-			claims.put("sub", user.getName());
-			
-			String roles = userDetails.getAuthorities().stream()
-			.map(GrantedAuthority::getAuthority)
-			.collect(Collectors.joining(" "));
-			claims.put(WebSecurityConfig.AUTHORITIES_CLAIM_NAME, roles);
-			claims.put("userId", "" + user.getId());
-			String jwt = jwtHelper.createJwtForClaims(email, claims);
-			System.out.println(jwt);
-			return new LoginResult(jwt);
+				String jwt = authService.createJwtToken(email, user, userDetails);
+
+				response.addCookie(new Cookie("jwt", jwt));
+				return new ResponseEntity<String>("Status OK",HttpStatus.OK);
 			}
 		} catch (UsernameNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found");
@@ -99,11 +92,7 @@ public class AuthController {
         if (existing != null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account already exists");
         }
-		UserDto userDto = new UserDto();
-		userDto.setName(name);
-		userDto.setEmail(email);
-		userDto.setPassword(password);
-
+		UserDto userDto = authService.createNewUser(name, email, password);
         userService.saveUser(userDto);
         return ResponseEntity.ok("Successful Registration");
     }
