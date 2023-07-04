@@ -25,7 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * @author imesha
  */
-@CrossOrigin(origins = { "${app.security.cors.origin}" })
+@CrossOrigin(origins = { "${app.security.cors.origin}" }, allowCredentials = "true")
 @RestController()
 @RequestMapping
 public class AuthController {
@@ -65,7 +65,13 @@ public class AuthController {
 			if (passwordEncoder.matches(password, user.getPassword())) {
 				String jwt = authService.createJwtToken(email, user, userDetails);
 
-				response.addCookie(new Cookie("jwt", jwt));
+				final Cookie cookie = new Cookie("jwt", jwt);
+				cookie.setHttpOnly(true);
+				cookie.setPath("/");
+				cookie.setDomain("localhost");
+				cookie.setMaxAge(900); // 15 minutes per session
+
+				response.addCookie(cookie);
 				return new ResponseEntity<String>("Status OK", HttpStatus.OK);
 			}
 		} catch (UsernameNotFoundException e) {
