@@ -41,7 +41,7 @@ public class AdminController {
     }
 
 	@GetMapping(path = "admin/list")
-	//@PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')") //remove user & tutor
+	@PreAuthorize("hasAuthority('ADMIN')") //remove user & tutor
 	public List<UserDto> userList() throws IOException {
 		List<UserDto> userList = userService.findAllUsers();
 		if (userList == null) {

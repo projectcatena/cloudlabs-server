@@ -37,7 +37,7 @@ public class WebSecurityConfig{
 
         http.authorizeRequests()
 			.antMatchers(HttpMethod.OPTIONS, "/**").permitAll() //allow CORS option call
-            .antMatchers("/login", "/signup", "/error", "/admin/list")
+            .antMatchers("/login", "/signup", "/error")
             .permitAll()
 			.anyRequest()
 			.authenticated()
