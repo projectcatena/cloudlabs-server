@@ -25,6 +25,8 @@ import com.google.cloud.compute.v1.MachineTypesClient;
 import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
+import com.google.cloud.compute.v1.Operation.Status;
+import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -368,5 +370,31 @@ public class ComputeServiceImpl implements ComputeService {
         computeDTO.setMachineType(machineTypeDTO);
 
         return computeDTO;
+    }
+
+    @Override
+    public ComputeDTO resetInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
+
+            ResetInstanceRequest resetInstanceRequest = ResetInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.resetAsync(
+                resetInstanceRequest);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.getStatus() == Status.DONE) {
+                System.out.println("Instance reset successfully ! ");
+            }
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setInstanceName(instanceName);
+            computeDTO.setStatus(response.getStatus().name());
+            return computeDTO;
+
+        }   
     }
 }

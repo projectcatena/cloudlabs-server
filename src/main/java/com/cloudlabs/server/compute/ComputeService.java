@@ -31,4 +31,6 @@ public interface ComputeService {
     List<ComputeDTO> listComputeInstances();
 
     ComputeDTO getComputeInstance(String instanceName);
+
+    ComputeDTO resetInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException;
 }

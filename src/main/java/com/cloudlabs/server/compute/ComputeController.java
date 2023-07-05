@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -75,4 +76,13 @@ public class ComputeController {
 
 		return response;
 	}
+
+	@PostMapping("/reset")
+	public ComputeDTO resetInstance(@RequestBody ComputeDTO resetRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+		
+		ComputeDTO response = computeService.resetInstance(resetRequest.getInstanceName());
+
+		return response;
+	}
+
 }
