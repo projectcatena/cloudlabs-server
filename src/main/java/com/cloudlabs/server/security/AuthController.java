@@ -1,8 +1,12 @@
 package com.cloudlabs.server.security;
 
+import com.cloudlabs.server.user.CustomUserDetailsService;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.UserService;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,17 +14,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.cloudlabs.server.user.CustomUserDetailsService;
-import com.cloudlabs.server.user.User;
-import com.cloudlabs.server.user.UserDto;
-import com.cloudlabs.server.user.UserRepository;
-import com.cloudlabs.server.user.UserService;
 
 /**
  * The auth controller to handle login requests
@@ -83,6 +82,20 @@ public class AuthController {
 
 		throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
 				"User not authenticated");
+	}
+
+	@PostMapping("/signout")
+	public ResponseEntity<String> logout(HttpServletResponse response) {
+
+		final Cookie cookie = new Cookie("jwt", null);
+		cookie.setHttpOnly(true);
+		cookie.setPath("/");
+		cookie.setDomain("localhost");
+		cookie.setMaxAge(0); // 30 minutes per session
+
+		response.addCookie(cookie);
+
+		return new ResponseEntity<String>("Status OK", HttpStatus.OK);
 	}
 
 	// handler method to handle register user form submit request
