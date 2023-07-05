@@ -1,5 +1,7 @@
 package com.cloudlabs.server.modules;
 
+import com.cloudlabs.server.modules.dto.ModuleDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -17,7 +19,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RestController
@@ -28,54 +33,52 @@ public class ModuleController {
     ModuleService moduleService;
 
     @GetMapping
-    public List<Module> getAllModules(){
-        return moduleService.getAllModules();
+    public List<ModuleDTO> getAllModules(){
+        
+        List<ModuleDTO> response = moduleService.getAllModules();
+
+        return response;
     }
 
     @GetMapping("/{moduleId}")
-    public Module getModuleById(@PathVariable String moduleId) {
-        try {
-            Long moduleIdAsLong = Long.valueOf(moduleId);
-            return moduleService.getModuleById(moduleIdAsLong);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid module ID format");
-        }
+    public ModuleDTO getModuleById(@PathVariable String moduleId) throws IOException {
+        Long moduleIdAsLong = Long.valueOf(moduleId);
+        ModuleDTO response = moduleService.getModuleById(moduleIdAsLong);
+
+        return response;
     }
 
     @PostMapping("/create")
-    public Module addModule(@RequestBody JsonNode requestData) {
-        String subtitle = requestData.get("subtitle").asText();
-        String title = requestData.get("title").asText();
-        String description = requestData.get("description").asText();
+    public ModuleDTO addModule(@RequestBody ModuleDTO moduleDTO) throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
-        if (subtitle.isBlank() || title.isBlank() || description.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Module details input");
-        }
+        ModuleDTO response = moduleService.addModule(moduleDTO);
 
-        return moduleService.addModule(subtitle, title, description);
+        if (response == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+
+        return response;
     }
 
     @DeleteMapping("/delete/{moduleId}")
-    public void deleteModule(@PathVariable String moduleId) {
-        try {
-            Long moduleIdAsLong = Long.valueOf(moduleId);
-            moduleService.deleteModule(moduleIdAsLong);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid module ID format");
-        }
+    public ModuleDTO deleteModule(@PathVariable String moduleId) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        
+        Long moduleIdAsLong = Long.valueOf(moduleId);
+        ModuleDTO response = moduleService.deleteModule(moduleIdAsLong);
+
+        return response;
     }
 
     @PutMapping("/update/{moduleId}")
-    public Module updateModule(@PathVariable String moduleId, @RequestBody JsonNode requestData) {
-        try {
-            Long moduleIdAsLong = Long.valueOf(moduleId);
-            String subtitle = requestData.get("subtitle").asText();
-            String title = requestData.get("title").asText();
-            String description = requestData.get("description").asText();
+    public ModuleDTO updateModule(@PathVariable String moduleId, @RequestBody ModuleDTO moduleDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        
+        Long moduleIdAsLong = Long.valueOf(moduleId);
+        ModuleDTO response = moduleService.updateModule(moduleIdAsLong, moduleDTO);
 
-            return moduleService.updateModule(moduleIdAsLong, subtitle, title, description);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid module ID format");
-        }
+        if (response == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+
+        return response;
     }
 }
