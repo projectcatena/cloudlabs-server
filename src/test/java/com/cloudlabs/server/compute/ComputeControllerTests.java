@@ -174,4 +174,35 @@ public class ComputeControllerTests {
                 .extracting(MachineTypeDTO::getName)
                 .anyMatch(value -> value.matches("e2-micro"));
     }
+
+    @Test
+    void createThenResetInstance() throws Exception {
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("instance-test-1");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("windows-server-2019");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-medium");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        // Reset instance
+        ComputeDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO resetComputeDTO = computeService.resetInstance(response.getInstanceName());
+
+        assertNotNull(resetComputeDTO.getStatus());
+    }
 }
