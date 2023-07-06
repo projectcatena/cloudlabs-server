@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-public class ModuleControllerTest {
+public class ModuleControllerTests {
     
     @Autowired
     protected MockMvc mockMvc;
