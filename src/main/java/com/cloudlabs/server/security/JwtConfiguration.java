@@ -59,6 +59,7 @@ public class JwtConfiguration {
 	@Bean
 	public RSAPrivateKey jwtSigningKey(KeyStore keyStore) {
 		try {
+			System.out.println(keyStore);
 			Key key = keyStore.getKey(keyAlias, privateKeyPassphrase.toCharArray());
 			if (key instanceof RSAPrivateKey) {
 				return (RSAPrivateKey) key;
