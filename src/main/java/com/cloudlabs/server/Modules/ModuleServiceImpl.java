@@ -73,9 +73,10 @@ public class ModuleServiceImpl implements ModuleService {
         }
 
         Module newModule = new Module(subtitle, title, description);
-        repository.save(newModule);
+        Module savedEntity = repository.save(newModule);
 
         ModuleDTO createdModuleDTO = new ModuleDTO();
+        createdModuleDTO.setModuleId(savedEntity.getModuleId());
         createdModuleDTO.setModuleSubtitle(newModule.getModuleSubtitle());
         createdModuleDTO.setModuleName(newModule.getModuleName());
         createdModuleDTO.setModuleDescription(newModule.getModuleDescription());
