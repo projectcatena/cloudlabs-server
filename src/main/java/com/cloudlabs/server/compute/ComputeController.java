@@ -85,4 +85,20 @@ public class ComputeController {
 		return response;
 	}
 
+	@PostMapping("/stop")
+	public ComputeDTO stopInstance(@RequestBody ComputeDTO stopRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+
+		ComputeDTO response = computeService.stopInstance(stopRequest.getInstanceName());
+
+		return response;
+	}
+
+	@PostMapping("/start")
+	public ComputeDTO startInstance(@RequestBody ComputeDTO startRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+
+		ComputeDTO response = computeService.startInstance(startRequest.getInstanceName());
+
+		return response;
+	}
+
 }
