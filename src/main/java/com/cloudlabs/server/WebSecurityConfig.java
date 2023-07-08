@@ -33,7 +33,9 @@ public class WebSecurityConfig {
          * authorize.requestMatchers("/module").hasRole)
          */
 
-        http.authorizeRequests()
+        http.cors()
+                .and()
+                .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll() // allow CORS option call
                 .antMatchers("/login", "/signout", "/signup", "/error")
