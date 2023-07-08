@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -22,6 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@WithMockUser(username = "tutor", roles = { "TUTOR" })
 public class ComputeControllerTests {
 
     @Autowired
@@ -110,6 +112,33 @@ public class ComputeControllerTests {
                 response.getAddress().getName());
 
         assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    @WithMockUser(username = "user", roles = { "USER" })
+    void failCreateComputeEngine_whenPublicImageAndNormalUserRole()
+            throws Exception {
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("test-public-image");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("debian-11");
+        sourceImageDTO.setProject("debian-cloud");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-micro");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
     @Test

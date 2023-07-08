@@ -65,6 +65,8 @@ jobs:
         GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         GCP_SIGNING_SERVICE_ACCOUNT: ${{ secrets.GCP_SIGNING_SERVICE_ACCOUNT }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        PRIVATE_KEY_PASSPHRASE: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3

@@ -4,25 +4,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.cloudlabs.server.image.dto.BuildImageDTO;
+import com.cloudlabs.server.image.dto.ImageDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.Charset;
 import java.util.Random;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.cloudlabs.server.image.dto.BuildImageDTO;
-import com.cloudlabs.server.image.dto.ImageDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@WithMockUser(username = "tutor", roles = { "TUTOR" })
 public class ImageControllerTests {
 
     @Autowired
@@ -39,11 +39,16 @@ public class ImageControllerTests {
         image.setObjectName("virtual-disk.vmdk");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/signed")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/signed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string(org.hamcrest.Matchers.containsString("https://storage.googleapis.com/knobby_maple/" + image.getObjectName())));
-    } 
+                .andExpect(MockMvcResultMatchers.content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "https://storage.googleapis.com/knobby_maple/" +
+                                        image.getObjectName())));
+    }
 
     @Test
     void getSignedURL_whenFileTypeIsVHD() throws Exception {
@@ -51,11 +56,30 @@ public class ImageControllerTests {
         image.setObjectName("virtual-disk.vhd");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/signed")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/signed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string(org.hamcrest.Matchers.containsString("https://storage.googleapis.com/knobby_maple/" + image.getObjectName())));
-    } 
+                .andExpect(MockMvcResultMatchers.content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "https://storage.googleapis.com/knobby_maple/" +
+                                        image.getObjectName())));
+    }
+
+    @Test
+    @WithMockUser(username = "user", roles = { "USER" })
+    void failGetSignedURL_whenFileTypeIsVHD_ButRoleIsUser() throws Exception {
+        ImageDTO image = new ImageDTO();
+        image.setObjectName("image.vhd");
+
+        String jsonString = objectMapper.writeValueAsString(image);
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/signed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
 
     @Test
     void failGetSignedURL_whenFileTypeIsNotVMDKOrVHD() throws Exception {
@@ -63,10 +87,12 @@ public class ImageControllerTests {
         image.setObjectName("image.img");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/signed")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/signed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    } 
+    }
 
     @Test
     void failGetSignedURL_whenNoFileType() throws Exception {
@@ -74,10 +100,12 @@ public class ImageControllerTests {
         image.setObjectName("image");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/signed")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/signed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    } 
+    }
 
     @Test
     void failGetSignedURL_whenNoParametersGiven() throws Exception {
@@ -87,12 +115,13 @@ public class ImageControllerTests {
                         }
                         """))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    } 
+    }
 
     /**
-     * Expensive test, as it will launch an actual build on GCP and return its build ID.
-     * Solution: Cancel build using the returned build ID before completion.
-     * 
+     * Expensive test, as it will launch an actual build on GCP and return its
+     * build ID. Solution: Cancel build using the returned build ID before
+     * completion.
+     *
      * @throws Exception
      */
     @Test
@@ -103,30 +132,39 @@ public class ImageControllerTests {
         image.setImageName("windows-server-2019");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        MvcResult response = mockMvc.perform(MockMvcRequestBuilders.post("/image/start")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        MvcResult response = mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.objectName").value(image.getObjectName()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.imageName").value(image.getImageName()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.objectName")
+                        .value(image.getObjectName()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.imageName")
+                        .value(image.getImageName()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.buildId").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus").value("QUEUED"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus")
+                        .value("QUEUED"))
                 .andReturn();
-        
-        // After launching a build, should cancel it to prevent unnecessary costly builds.
-        BuildImageDTO buildImageDTO = objectMapper.readValue(response.getResponse().getContentAsString(), BuildImageDTO.class);
+
+        // After launching a build, should cancel it to prevent unnecessary
+        // costly builds.
+        BuildImageDTO buildImageDTO = objectMapper.readValue(
+                response.getResponse().getContentAsString(), BuildImageDTO.class);
         BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild(buildImageDTO.getBuildId());
 
         assertNotNull(cancelBuildResponse.getBuildStatus());
         assertNotEquals("", cancelBuildResponse.getBuildStatus());
-    } 
+    }
 
     @Test
     void failStartBuild_whenParametersNotGiven() throws Exception {
         ImageDTO image = new ImageDTO();
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/start")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
@@ -142,8 +180,10 @@ public class ImageControllerTests {
         image.setImageName("test-image-does-not-exist");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/start")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
@@ -172,8 +212,10 @@ public class ImageControllerTests {
         image.setImageName("test-image-does-not-exist");
 
         String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/image/delete")
-                .contentType(MediaType.APPLICATION_JSON).content(jsonString))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/image/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 }
