@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +27,7 @@ public class ComputeController {
 	// Create a new public instance with the provided "instanceName" value in the
 	// specified project and zone.
 	@PostMapping("/create")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO create(@RequestBody ComputeDTO computeDTO)
 			throws IOException, InterruptedException, ExecutionException,
 			TimeoutException {
@@ -40,6 +42,7 @@ public class ComputeController {
 	}
 
 	@GetMapping("/list-machine-types")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public List<MachineTypeDTO> listMachineTypes(@RequestParam(required = false) String query)
 			throws IOException {
 
@@ -66,6 +69,7 @@ public class ComputeController {
 	}
 
 	@PostMapping("/delete")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO deleteComputeInstance(@RequestBody ComputeDTO computeDTO)
 			throws InterruptedException, ExecutionException, TimeoutException,
 			IOException {
