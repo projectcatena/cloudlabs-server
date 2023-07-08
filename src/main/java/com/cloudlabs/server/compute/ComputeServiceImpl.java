@@ -30,6 +30,7 @@ import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
+import com.google.cloud.compute.v1.GetInstanceRequest;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -399,6 +400,23 @@ public class ComputeServiceImpl implements ComputeService {
             return computeDTO;
 
         }   
+    }
+
+    @Override
+    public ComputeDTO getInstanceStatus(String instanceName) throws IOException {
+        try(InstancesClient instancesClient = InstancesClient.create()) {
+            GetInstanceRequest request = GetInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            Instance response = instancesClient.get(request);
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setStatus(response.getStatus());
+            return computeDTO;
+        }
     }
 
     @Override

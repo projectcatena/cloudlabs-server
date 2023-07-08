@@ -34,6 +34,8 @@ public interface ComputeService {
 
     ComputeDTO resetInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException;
 
+    ComputeDTO getInstanceStatus(String instanceName) throws IOException;
+
     ComputeDTO stopInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException;
 
     ComputeDTO startInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException;
