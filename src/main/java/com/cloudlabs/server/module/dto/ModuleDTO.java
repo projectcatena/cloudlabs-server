@@ -1,4 +1,4 @@
-package com.cloudlabs.server.modules.dto;
+package com.cloudlabs.server.module.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;

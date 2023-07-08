@@ -1,4 +1,4 @@
-package com.cloudlabs.server.modules;
+package com.cloudlabs.server.module;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

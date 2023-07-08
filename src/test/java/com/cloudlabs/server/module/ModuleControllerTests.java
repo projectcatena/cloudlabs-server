@@ -1,4 +1,4 @@
-package com.cloudlabs.server.modules;
+package com.cloudlabs.server.module;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
-import com.cloudlabs.server.modules.dto.ModuleDTO;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

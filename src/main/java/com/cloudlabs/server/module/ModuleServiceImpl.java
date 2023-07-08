@@ -1,6 +1,6 @@
-package com.cloudlabs.server.modules;
+package com.cloudlabs.server.module;
 
-import com.cloudlabs.server.modules.dto.ModuleDTO;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

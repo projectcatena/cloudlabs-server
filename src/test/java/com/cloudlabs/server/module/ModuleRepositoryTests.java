@@ -1,4 +1,4 @@
-package com.cloudlabs.server.modules;
+package com.cloudlabs.server.module;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

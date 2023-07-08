@@ -1,6 +1,6 @@
-package com.cloudlabs.server.modules;
+package com.cloudlabs.server.module;
 
-import com.cloudlabs.server.modules.dto.ModuleDTO;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
