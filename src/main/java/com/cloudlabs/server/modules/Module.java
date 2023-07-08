@@ -1,17 +1,36 @@
-package com.cloudlabs.server.MODULESOLD.dto;
+package com.cloudlabs.server.modules;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-@JsonInclude(Include.NON_DEFAULT) // Ignore null fields, and default values (like 0 for long type)
-public class ModuleDTO {
+@Entity
+@Table(name = "modules")
+public class Module {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long moduleId;
+
+    @Column(name = "subtitle", nullable = false)
     private String moduleSubtitle;
+
+    @Column(name = "name", nullable = false)
     private String moduleName;
+
+    @Column(name = "description", length = 1000, nullable = false)
     private String moduleDescription;
 
-    public ModuleDTO() {};
+    public Module() {}
+
+    public Module(String moduleSubtitle, String moduleName, String moduleDescription) {
+            this.moduleSubtitle = moduleSubtitle;
+            this.moduleName = moduleName;
+            this.moduleDescription = moduleDescription;
+        }
 
     public Long getModuleId() {
         return this.moduleId;
@@ -40,7 +59,7 @@ public class ModuleDTO {
     public String getModuleDescription() {
         return this.moduleDescription;
     }
-    
+
     public void setModuleDescription(String moduleDescription) {
         this.moduleDescription = moduleDescription;
     }
