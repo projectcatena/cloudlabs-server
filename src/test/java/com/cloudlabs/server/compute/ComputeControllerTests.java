@@ -178,7 +178,7 @@ public class ComputeControllerTests {
     @Test
     void createThenResetInstanceThenDelete() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("instance-test-1");
+        request.setInstanceName("instance-test-reset");
         request.setStartupScript("");
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
