@@ -1,18 +1,26 @@
 package com.cloudlabs.server.security.resource;
 
-import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
 /**
  * Login response object containing the JWT
  *
  * @author imesha
  */
-@Data
-@RequiredArgsConstructor
 public class LoginResult {
-	
-	@NonNull
+
 	private String jwt;
+
+	public LoginResult() {
+	}
+
+	public LoginResult(String jwt) {
+		this.jwt = jwt;
+	}
+
+	public String getJwt() {
+		return jwt;
+	}
+
+	public void setJwt(String jwt) {
+		this.jwt = jwt;
+	}
 }
