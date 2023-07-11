@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@WithMockUser(username = "tutor", roles = { "TUTOR" })
 public class ModuleControllerTests {
     
     @Autowired
@@ -52,7 +54,9 @@ public class ModuleControllerTests {
 
     }
 
-    @Test void failCreateModule_whenInvalidParametersGiven() throws Exception {
+    @WithMockUser(username = "user", roles = { "USER" })
+    @Test 
+    void failCreateModule_whenInvalidParametersGivenAndNormalUserRole() throws Exception {
         ModuleDTO request = new ModuleDTO();    
         request.setModuleSubtitle("");
         request.setModuleName("");
