@@ -4,6 +4,9 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserService;
 import com.google.api.gax.longrunning.OperationFuture;
 import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AddAccessConfigInstanceRequest;
@@ -33,15 +36,13 @@ import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +55,9 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private ComputeRepository computeRepository;
+
+    @Autowired
+    private UserService userService;
 
     @Override
     public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
@@ -186,9 +190,22 @@ public class ComputeServiceImpl implements ComputeService {
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(publicIPAddressDTO);
 
+            // Get user object from current context
+
+            // Get email from Jwt token using context
+            Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getCredentials();
+
+            String email = (String) jwt.getClaims().get("email");
+
+            User user = userService.findByEmail(email);
+
+            List<User> users = Arrays.asList(user);
+
             // Successful Instance Creation, save to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
-                    publicIPAddressDTO.getIpv4Address());
+                    publicIPAddressDTO.getIpv4Address(), users);
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -480,5 +497,27 @@ public class ComputeServiceImpl implements ComputeService {
             computeDTO.setStatus(response.getStatus().name());
             return computeDTO;
         }
+    }
+
+    /*
+     * Allow tutor to assign users to a compute instance
+     *
+     * @param users
+     *
+     * @param computeInstance
+     */
+    @Override
+    public ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO) {
+        List<User> users = new ArrayList<>();
+
+        for (UserDto userDTO : computeDTO.getUsers()) {
+            User user = userService.findByEmail(userDTO.getEmail());
+            users.add(user);
+        }
+
+        Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName());
+        compute.setUsers(users);
+
+        return computeDTO;
     }
 }

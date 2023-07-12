@@ -3,6 +3,7 @@ package com.cloudlabs.server.compute;
 import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
+import com.cloudlabs.server.user.UserDto;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -45,4 +46,6 @@ public interface ComputeService {
     ComputeDTO startInstance(String instanceName)
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException;
+
+    ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO);
 }

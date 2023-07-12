@@ -5,14 +5,14 @@ package com.cloudlabs.server.security.resource;
  *
  * @author imesha
  */
-public class LoginResult {
+public class LoginResultDTO {
 
 	private String jwt;
 
-	public LoginResult() {
+	public LoginResultDTO() {
 	}
 
-	public LoginResult(String jwt) {
+	public LoginResultDTO(String jwt) {
 		this.jwt = jwt;
 	}
 

@@ -1,8 +1,13 @@
 package com.cloudlabs.server.security;
 
+import com.cloudlabs.server.security.resource.LoginResultDTO;
+import com.cloudlabs.server.user.CustomUserDetailsService;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.UserService;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.cloudlabs.server.user.CustomUserDetailsService;
-import com.cloudlabs.server.user.User;
-import com.cloudlabs.server.user.UserDto;
-import com.cloudlabs.server.user.UserRepository;
-import com.cloudlabs.server.user.UserService;
 
 /**
  * The auth controller to handle login requests
@@ -56,7 +55,7 @@ public class AuthController {
 
 	// handler method to handle user login request
 	@PostMapping(path = "login", consumes = { MediaType.APPLICATION_FORM_URLENCODED_VALUE })
-	public ResponseEntity<String> login(@RequestParam String email, @RequestParam String password,
+	public LoginResultDTO login(@RequestParam String email, @RequestParam String password,
 			HttpServletResponse response) {
 
 		// UserDetails userDetails;
@@ -74,7 +73,9 @@ public class AuthController {
 				cookie.setMaxAge(1800); // 30 minutes per session
 
 				response.addCookie(cookie);
-				return new ResponseEntity<String>(jwt, HttpStatus.OK);
+
+				LoginResultDTO loginResultDTO = new LoginResultDTO(jwt);
+				return loginResultDTO;
 			}
 		} catch (UsernameNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

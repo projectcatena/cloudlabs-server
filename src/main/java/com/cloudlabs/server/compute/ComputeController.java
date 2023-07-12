@@ -27,7 +27,7 @@ public class ComputeController {
 	// Create a new public instance with the provided "instanceName" value in the
 	// specified project and zone.
 	@PostMapping("/create")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+	@PreAuthorize("hasAnyAuthority('TUTOR','ADMIN')")
 	public ComputeDTO create(@RequestBody ComputeDTO computeDTO)
 			throws IOException, InterruptedException, ExecutionException,
 			TimeoutException {
@@ -69,7 +69,7 @@ public class ComputeController {
 	}
 
 	@PostMapping("/delete")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+	@PreAuthorize("hasAnyAuthority('TUTOR','ADMIN')")
 	public ComputeDTO deleteComputeInstance(@RequestBody ComputeDTO computeDTO)
 			throws InterruptedException, ExecutionException, TimeoutException,
 			IOException {
@@ -115,6 +115,14 @@ public class ComputeController {
 			IOException {
 
 		ComputeDTO response = computeService.startInstance(startRequest.getInstanceName());
+
+		return response;
+	}
+
+	@PostMapping("/add-users")
+	public ComputeDTO addComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
+
+		ComputeDTO response = computeService.addComputeInstanceUsers(computeDTO);
 
 		return response;
 	}
