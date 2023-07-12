@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -227,12 +228,16 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        // Reset instance
-        ComputeDTO response = objectMapper.readValue(
-                result.getResponse().getContentAsString(), ComputeDTO.class);
-        ComputeDTO resetComputeDTO = computeService.resetInstance(response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
+        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
-        assertNotNull(resetComputeDTO.getStatus());
+        // Reset instance
+        mockMvc.perform(MockMvcRequestBuilders.post("/compute/reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString2))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
 
         // Delete instance and release its public IP Address after test
         ComputeDTO deleteresponse = objectMapper.readValue(
@@ -247,7 +252,7 @@ public class ComputeControllerTests {
     @Test
     void createThenGetInstanceStatusThenDelete() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("instance-test-1");
+        request.setInstanceName("instance-test-status");
         request.setStartupScript("");
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
@@ -267,12 +272,16 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        // Get instance status
-        ComputeDTO response = objectMapper.readValue(
-                result.getResponse().getContentAsString(), ComputeDTO.class);
-        ComputeDTO resetComputeDTO = computeService.getInstanceStatus(response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
+        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
-        assertNotNull(resetComputeDTO.getStatus());
+        // Get instance status
+        mockMvc.perform(MockMvcRequestBuilders.post("/compute/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString2))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
 
         // Delete instance and release its public IP Address after test
         ComputeDTO deleteresponse = objectMapper.readValue(
@@ -287,7 +296,7 @@ public class ComputeControllerTests {
     @Test
     void createThenStopInstanceThenDelete() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("instance-test-1");
+        request.setInstanceName("instance-test-stop");
         request.setStartupScript("");
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
@@ -307,12 +316,16 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        // Get instance status
-        ComputeDTO response = objectMapper.readValue(
-                result.getResponse().getContentAsString(), ComputeDTO.class);
-        ComputeDTO resetComputeDTO = computeService.stopInstance(response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
+        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
-        assertNotNull(resetComputeDTO.getStatus());
+        // Stop instance 
+        mockMvc.perform(MockMvcRequestBuilders.post("/compute/stop")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString2))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
 
         // Delete instance and release its public IP Address after test
         ComputeDTO deleteresponse = objectMapper.readValue(
@@ -327,7 +340,7 @@ public class ComputeControllerTests {
     @Test
     void createThenStopThenStartInstanceThenDelete() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("instance-test-1");
+        request.setInstanceName("instance-test-start");
         request.setStartupScript("");
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
@@ -347,12 +360,189 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        // Get instance status
+        // Stop instance
         ComputeDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ComputeDTO.class);
-        ComputeDTO resetComputeDTO = computeService.startInstance(response.getInstanceName());
+        ComputeDTO resetComputeDTO = computeService.stopInstance(response.getInstanceName());
 
         assertNotNull(resetComputeDTO.getStatus());
+
+        ComputeDTO response2 = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
+        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response2.getInstanceName());
+        String jsonString2 = objectMapper.writeValueAsString(jsonNode);
+
+        // Start instance
+        mockMvc.perform(MockMvcRequestBuilders.post("/compute/start")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonString2))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        // Delete instance and release its public IP Address after test
+        ComputeDTO deleteresponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(deleteresponse.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(
+                deleteresponse.getAddress().getName());
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void failResetInstance_whenInvalidParametersGiven() throws Exception {
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("instance-test-reset-fail");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("windows-server-2019");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-medium");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("Invalid"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
+
+        // Delete instance and release its public IP Address after test
+        ComputeDTO deleteresponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(deleteresponse.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(
+                deleteresponse.getAddress().getName());
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void failGetInstanceStatus_whenInvalidParametersGiven() throws Exception {
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("instance-test-status-fail");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("windows-server-2019");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-medium");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("Invalid"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
+
+        // Delete instance and release its public IP Address after test
+        ComputeDTO deleteresponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(deleteresponse.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(
+                deleteresponse.getAddress().getName());
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void failStopInstance_whenInvalidParametersGiven() throws Exception {
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("instance-test-stop-fail");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("windows-server-2019");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-medium");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/stop")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("Invalid"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
+
+        // Delete instance and release its public IP Address after test
+        ComputeDTO deleteresponse = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO deleteComputeDTO = computeService.deleteInstance(deleteresponse.getInstanceName());
+        computeService.releaseStaticExternalIPAddress(
+                deleteresponse.getAddress().getName());
+
+        assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void failStartInstance_whenInvalidParametersGiven() throws Exception {
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("instance-test-start-fail");
+        request.setStartupScript("");
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("windows-server-2019");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-medium");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        MvcResult result = mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        // Stop instance
+        ComputeDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        ComputeDTO resetComputeDTO = computeService.stopInstance(response.getInstanceName());
+
+        assertNotNull(resetComputeDTO.getStatus());
+
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/start")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("Invalid"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andReturn();
 
         // Delete instance and release its public IP Address after test
         ComputeDTO deleteresponse = objectMapper.readValue(
