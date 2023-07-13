@@ -24,7 +24,7 @@ public class User implements UserDetails {
   private long id;
 
   @Column(nullable = false)
-  private String fullName;
+  private String fullname;
 
   @Column(nullable = false, unique = true)
   private String username;
@@ -87,12 +87,12 @@ public class User implements UserDetails {
     this.id = id;
   }
 
-  public String getFullName() {
-    return fullName;
+  public String getFullname() {
+    return fullname;
   }
 
-  public void setFullName(String fullName) {
-    this.fullName = fullName;
+  public void setFullname(String fullname) {
+    this.fullname = fullname;
   }
 
   public void setUsername(String username) {
