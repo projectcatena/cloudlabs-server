@@ -1,7 +1,6 @@
 package com.cloudlabs.server.security;
 
 import com.cloudlabs.server.security.jwt.JwtAuthenticationFilter;
-import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,8 +73,10 @@ public class WebSecurityConfig {
                         UsernamePasswordAuthenticationFilter.class);
 
         // JWT Validation Configuration
-        http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(
-                authenticationConverter());
+        /*
+         * http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(
+         * authenticationConverter());
+         */
 
         /*
          * .formLogin()
@@ -102,10 +103,10 @@ public class WebSecurityConfig {
         return source;
     }
 
-    // Override the loadByUsername method
+    // Override the loadByUsername method to find user by email
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username).orElseThrow(
+        return email -> userRepository.findByEmail(email).orElseThrow(
                 () -> new UsernameNotFoundException("User not found"));
     }
 
@@ -153,14 +154,17 @@ public class WebSecurityConfig {
     }
 
     // Converts Bearer token to Jwt token
-    @Bean
-    protected JwtAuthenticationConverter authenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
-    }
+    /*
+     * @Bean
+     * protected JwtAuthenticationConverter authenticationConverter() {
+     * JwtGrantedAuthoritiesConverter authoritiesConverter = new
+     * JwtGrantedAuthoritiesConverter();
+     * authoritiesConverter.setAuthorityPrefix("");
+     * authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+     * 
+     * JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+     * converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+     * return converter;
+     * }
+     */
 }

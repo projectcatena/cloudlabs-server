@@ -1,15 +1,15 @@
 package com.cloudlabs.server.security.auth.dto;
 
-public class AuthenticationRequestDTO {
+public class LoginDTO {
 
   private String email;
 
   private String password;
 
-  public AuthenticationRequestDTO() {
+  public LoginDTO() {
   }
 
-  public AuthenticationRequestDTO(String email, String password) {
+  public LoginDTO(String email, String password) {
     this.email = email;
     this.password = password;
   }

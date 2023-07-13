@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -14,10 +15,13 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+@Entity
+@Table(name = "user")
 public class User implements UserDetails {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,6 +50,25 @@ public class User implements UserDetails {
     return roles.stream()
         .map(role -> new SimpleGrantedAuthority(role.getName().name()))
         .collect(Collectors.toList());
+  }
+
+  public User() {
+  }
+
+  public User(String fullname, String username, String email, String password) {
+    this.fullname = fullname;
+    this.username = username;
+    this.email = email;
+    this.password = password;
+  }
+
+  public User(String fullname, String username, String email, String password,
+      List<Role> roles) {
+    this.fullname = fullname;
+    this.username = username;
+    this.email = email;
+    this.password = password;
+    this.roles = roles;
   }
 
   @Override
