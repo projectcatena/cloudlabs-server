@@ -135,7 +135,7 @@ public class JwtServiceImpl implements JwtService {
    * time (miliseconds).
    *
    * Signing key is extracted from key store and the JWT is signed using the
-   * HS256 algorithm.
+   * RS256 algorithm.
    *
    * Subject of the token is the username.
    *
@@ -150,7 +150,7 @@ public class JwtServiceImpl implements JwtService {
         .setSubject(userDetails.getUsername())
         .setIssuedAt(new Date(System.currentTimeMillis()))
         .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 2))
-        .signWith(loadSigningKey(loadKeyStore()), SignatureAlgorithm.HS256)
+        .signWith(loadSigningKey(loadKeyStore()), SignatureAlgorithm.RS256)
         .compact();
   }
 

@@ -55,6 +55,20 @@ public class AuthenticationController {
         """);
   }
 
+  @PostMapping("/signout")
+  public ResponseEntity<String> login(HttpServletResponse response) {
+
+    final Cookie cookie = new Cookie("jwt", null);
+    cookie.setHttpOnly(true);
+    cookie.setPath("/");
+    cookie.setDomain("localhost");
+    cookie.setMaxAge(0); // logout set to 0 to clear cookie
+
+    response.addCookie(cookie);
+    return ResponseEntity.ok("""
+          "status": "OK"
+        """);
+  }
+
   // TODO: refresh token
-  // TODO: signout
 }

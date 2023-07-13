@@ -7,7 +7,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,12 +30,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain)
       throws ServletException, IOException {
     String jwt = getTokenFromCookie(request);
-    String username = jwtService.getUsername(jwt);
 
-    // If got no token or username is null, pass it to the next filter.
-    if (jwt == null || username == null) {
+    // If got no token, pass it to the next filter and return. Otherwise, the
+    // operation will continue on resulting in exception as getUsername()
+    // parameter cannot be null
+    if (jwt == null || jwt.isBlank()) {
       filterChain.doFilter(request, response);
+      return;
     }
+
+    String username = jwtService.getUsername(jwt);
 
     if (username != null &&
         SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -63,16 +66,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private String getTokenFromCookie(HttpServletRequest request) {
     Cookie[] cookies = request.getCookies();
 
-    if (cookies == null) {
-      throw new AuthenticationServiceException("No cookie provided");
-    }
-
-    for (Cookie cookie : cookies) {
-      if (cookie.getName() == "jwt") {
-        return cookie.getValue();
+    if (cookies != null) {
+      for (Cookie cookie : cookies) {
+        if (cookie.getName().equals("jwt")) {
+          return cookie.getValue();
+        }
       }
     }
 
-    throw new AuthenticationServiceException("Authentication token not found");
+    return null;
   }
 }

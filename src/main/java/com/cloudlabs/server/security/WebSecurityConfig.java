@@ -1,26 +1,16 @@
 package com.cloudlabs.server.security;
 
 import com.cloudlabs.server.security.jwt.JwtAuthenticationFilter;
-import com.cloudlabs.server.user.UserRepository;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -33,10 +23,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class WebSecurityConfig {
 
     @Autowired
-    private UserRepository userRepository;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private AuthenticationProvider authenticationProvider;
 
     public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
@@ -60,7 +50,7 @@ public class WebSecurityConfig {
                 .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll() // allow CORS option call
-                .antMatchers("/login", "/signout", "/signup", "/error")
+                .antMatchers("/auth/login", "/auth/signout", "/auth/register", "/error")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
@@ -68,7 +58,7 @@ public class WebSecurityConfig {
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                .authenticationProvider(authenticationProvider())
+                .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
 
@@ -103,56 +93,6 @@ public class WebSecurityConfig {
         return source;
     }
 
-    // Override the loadByUsername method to find user by email
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmail(email).orElseThrow(
-                () -> new UsernameNotFoundException("User not found"));
-    }
-
-    /*
-     * This is the data access object that is responsible for fetching user
-     * details and encode password .etc
-     *
-     * When authentication is successful, the Authentication that is returned is
-     * of type UsernamePasswordAuthenticationToken and has a principal that is the
-     * UserDetails returned by the configured UserDetailsService. Ultimately, the
-     * returned UsernamePasswordAuthenticationToken is set on the
-     * SecurityContextHolder by the authentication Filter.
-     */
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        // An implementation of an Authentication Provider that uses a
-        // UserDetailsService and PasswordEncoder to authenticate a username and
-        // password.
-        // Source:
-        // https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/dao-authentication-provider.html
-        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-
-        // DaoAuthenticationProvider looks up the UserDetails from the
-        // UserDetailsService.
-        daoAuthenticationProvider.setUserDetailsService(userDetailsService());
-
-        // DaoAuthenticationProvider then uses the PasswordEncoder to validate the
-        // password on the UserDetails returned in the previous step.
-        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-
-        return daoAuthenticationProvider;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    // Literally manages the authentication
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-            throws Exception {
-
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
     // Converts Bearer token to Jwt token
     /*
      * @Bean
@@ -161,7 +101,7 @@ public class WebSecurityConfig {
      * JwtGrantedAuthoritiesConverter();
      * authoritiesConverter.setAuthorityPrefix("");
      * authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
-     * 
+     *
      * JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
      * converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
      * return converter;
