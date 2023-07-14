@@ -15,6 +15,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
@@ -131,7 +133,7 @@ public class JwtServiceImpl implements JwtService {
    * information that wants to be stored within JWT.
    *
    * Expiration should be short, and refreshing of token should be frequent. In
-   * this case, the token is valid for 2 hours + 1000 miliseconds from issued
+   * this case, the token is valid for 5 minutes from issued
    * time (miliseconds).
    *
    * Signing key is extracted from key store and the JWT is signed using the
@@ -145,13 +147,22 @@ public class JwtServiceImpl implements JwtService {
   @Override
   public String generateToken(Map<String, Object> extraClaims,
       UserDetails userDetails) {
+
+    Instant issuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Instant expiration = issuedAt.plus(5, ChronoUnit.MINUTES);
+
     return Jwts.builder()
         .setClaims(extraClaims)
-        .setSubject(userDetails.getUsername())
-        .setIssuedAt(new Date(System.currentTimeMillis()))
-        .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 2))
+        .setSubject(userDetails.getUsername()) // user email
+        .setIssuedAt(Date.from(issuedAt))
+        .setExpiration(Date.from(expiration))
         .signWith(loadSigningKey(loadKeyStore()), SignatureAlgorithm.RS256)
         .compact();
+
+    /*
+     * .setIssuedAt(new Date(System.currentTimeMillis()))
+     * .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 2))
+     */
   }
 
   @Override

@@ -8,6 +8,9 @@ import com.cloudlabs.server.security.auth.dto.RegisterDTO;
 import com.cloudlabs.server.security.jwt.JwtService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
+import io.jsonwebtoken.Claims;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -65,8 +68,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     // Generte jwt token with user
     String jwt = jwtService.generateToken(new HashMap<>(), user);
 
-    AuthenticationResponseDTO response = new AuthenticationResponseDTO(jwt);
+    Instant expiration = jwtService.getExpiration(jwt).toInstant();
+    Instant issuedAt = jwtService.getClaim(jwt, Claims::getIssuedAt).toInstant();
+    Duration duration = Duration.between(expiration, issuedAt);
 
-    return response;
+    return new AuthenticationResponseDTO(jwt);
   }
 }

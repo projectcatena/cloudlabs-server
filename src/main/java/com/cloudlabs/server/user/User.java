@@ -76,9 +76,10 @@ public class User implements UserDetails {
     return password;
   }
 
+  // Retrieve by email for UserDetailsService
   @Override
   public String getUsername() {
-    return username;
+    return email;
   }
 
   @Override
@@ -115,6 +116,12 @@ public class User implements UserDetails {
 
   public void setFullname(String fullname) {
     this.fullname = fullname;
+  }
+
+  // To return actual username, as the previos @Override getUsername returns
+  // email
+  public String getUserName() {
+    return username;
   }
 
   public void setUsername(String username) {
