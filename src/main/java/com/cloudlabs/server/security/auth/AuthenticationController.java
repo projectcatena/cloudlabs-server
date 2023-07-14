@@ -22,8 +22,8 @@ public class AuthenticationController {
   // After register, may allow user to login, or alternatively, redirect them to
   // login page
   @PostMapping("/register")
-  public ResponseEntity<String> register(@RequestBody RegisterDTO request,
-      HttpServletResponse response) {
+  public ResponseEntity<AuthenticationResponseDTO> register(
+      @RequestBody RegisterDTO request, HttpServletResponse response) {
     AuthenticationResponseDTO authenticationResponseDTO = authenticationService.register(request);
 
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
@@ -33,14 +33,11 @@ public class AuthenticationController {
     cookie.setMaxAge(5 * 60); // 5 minutes
 
     response.addCookie(cookie);
-    return ResponseEntity.ok("""
-          "status": "OK"
-        """);
+    return ResponseEntity.ok(authenticationResponseDTO);
   }
 
   @PostMapping("/login")
-  public ResponseEntity<String> login(@RequestBody LoginDTO request,
-      HttpServletResponse response) {
+  public ResponseEntity<AuthenticationResponseDTO> login(@RequestBody LoginDTO request, HttpServletResponse response) {
     AuthenticationResponseDTO authenticationResponseDTO = authenticationService.login(request);
 
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
@@ -50,9 +47,7 @@ public class AuthenticationController {
     cookie.setMaxAge(5 * 60); // 5 minutes
 
     response.addCookie(cookie);
-    return ResponseEntity.ok("""
-          "status": "OK"
-        """);
+    return ResponseEntity.ok(authenticationResponseDTO);
   }
 
   @PostMapping("/signout")

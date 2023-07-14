@@ -8,10 +8,9 @@ import com.cloudlabs.server.security.auth.dto.RegisterDTO;
 import com.cloudlabs.server.security.jwt.JwtService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
-import io.jsonwebtoken.Claims;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -46,7 +45,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     User user = userRepository.findByEmail(requestDTO.getEmail())
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-    String jwt = jwtService.generateToken(new HashMap<>(), user);
+    // Map additional claims, specifically username, fullname, and list of roles
+    // for frontend
+    HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("username", user.getUserName());
+    extraClaims.put("fullname", user.getFullname());
+    extraClaims.put("roles", user.getRoles());
+
+    String jwt = jwtService.generateToken(extraClaims, user);
 
     return new AuthenticationResponseDTO(jwt);
   }
@@ -56,21 +62,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
    */
   @Override
   public AuthenticationResponseDTO register(RegisterDTO registerDTO) {
-    Role role = new Role(RoleType.USER);
-
+    List<Role> roles = Arrays.asList(new Role(RoleType.USER), new Role(RoleType.TUTOR));
     User user = new User(registerDTO.getFullname(), registerDTO.getUsername(),
         registerDTO.getEmail(),
-        passwordEncoder.encode(registerDTO.getPassword()));
+        passwordEncoder.encode(registerDTO.getPassword()), roles);
 
     // Id will be auto-generated and assigned
     userRepository.save(user);
 
-    // Generte jwt token with user
-    String jwt = jwtService.generateToken(new HashMap<>(), user);
+    HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("username", user.getUserName());
+    extraClaims.put("fullname", user.getFullname());
+    extraClaims.put("roles", user.getRoles());
 
-    Instant expiration = jwtService.getExpiration(jwt).toInstant();
-    Instant issuedAt = jwtService.getClaim(jwt, Claims::getIssuedAt).toInstant();
-    Duration duration = Duration.between(expiration, issuedAt);
+    String jwt = jwtService.generateToken(extraClaims, user);
 
     return new AuthenticationResponseDTO(jwt);
   }

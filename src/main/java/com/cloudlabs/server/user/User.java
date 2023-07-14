@@ -1,7 +1,6 @@
 package com.cloudlabs.server.user;
 
 import com.cloudlabs.server.role.Role;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,12 +42,13 @@ public class User implements UserDetails {
   @JoinTable(name = "users_roles", joinColumns = {
       @JoinColumn(name = "USER_ID", referencedColumnName = "ID") }, inverseJoinColumns = {
           @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID") })
-  private List<Role> roles = new ArrayList<>();
+  private List<Role> roles;
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     return roles.stream()
-        .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+        .map(
+            role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
         .collect(Collectors.toList());
   }
 
