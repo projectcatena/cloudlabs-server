@@ -13,6 +13,7 @@ public class ComputeDTO {
     private String startupScript;
     private AddressDTO address;
     private String status;
+    private String snapshotName;
 
     public ComputeDTO() {}
 
@@ -78,6 +79,14 @@ public class ComputeDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getSnapshotName() {
+        return this.snapshotName;
+    }
+
+    public void setSnapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
     }
 
 }

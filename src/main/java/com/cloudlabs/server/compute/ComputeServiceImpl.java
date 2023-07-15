@@ -1,5 +1,16 @@
 package com.cloudlabs.server.compute;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
@@ -26,15 +37,6 @@ import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.ServiceAccount;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import javax.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -47,7 +49,7 @@ public class ComputeServiceImpl implements ComputeService {
     private ComputeRepository computeRepository;
 
     @Override
-    public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
+    public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata, AttachedDisk disk) {
         // Initialize client that will be used to send requests. This client only
         // needs to be created once, and can be reused for multiple requests. After
         // completing all of your requests, call the `instancesClient.close()`
@@ -97,16 +99,26 @@ public class ComputeServiceImpl implements ComputeService {
 
             // Instance creation requires at least one persistent disk and one network
             // interface.
-            AttachedDisk disk = AttachedDisk.newBuilder()
-                    .setBoot(true)
-                    .setAutoDelete(true)
-                    .setType(Type.PERSISTENT.toString())
-                    .setDeviceName("disk-1")
-                    .setInitializeParams(AttachedDiskInitializeParams.newBuilder()
-                            .setSourceImage(sourceImage)
-                            .setDiskSizeGb(diskSizeGb)
-                            .build())
-                    .build();
+            Vector<AttachedDisk> disks = new Vector<>();
+            System.out.println(disk);
+            if (disk == null) {
+                AttachedDisk new_disk = AttachedDisk.newBuilder()
+                        .setBoot(true)
+                        .setAutoDelete(true)
+                        .setType(Type.PERSISTENT.toString())
+                        .setDeviceName("disk-1")
+                        .setInitializeParams(AttachedDiskInitializeParams.newBuilder()
+                                .setSourceImage(sourceImage)
+                                .setDiskSizeGb(diskSizeGb)
+                                .build())
+                        .build();
+                disks.add(new_disk);
+            }
+            else {
+                disks.add(disk);
+
+            }
+
 
             // Reserve Public IP Address for the instance
             String addressResourceName = String.format("%s-public-ip", instanceName);
@@ -146,7 +158,7 @@ public class ComputeServiceImpl implements ComputeService {
                     .setMachineType(machineType)
                     .setMetadata(metadata)
                     .addServiceAccounts(serviceAccount)
-                    .addDisks(disk)
+                    .addAllDisks(disks)
                     .addNetworkInterfaces(networkInterface)
                     .build();
 
@@ -168,6 +180,7 @@ public class ComputeServiceImpl implements ComputeService {
             if (response.hasError()) {
                 return null;
             }
+            System.out.println("Operation Status: " + response.getStatus());
 
             // Attach the Public IP Address to the instance's default network
             // interface: nic0 assignStaticExternalIPAddress(instanceName,
@@ -179,11 +192,12 @@ public class ComputeServiceImpl implements ComputeService {
 
             // Successful Instance Creation, save to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
-                    publicIPAddressDTO.getIpv4Address());
+                    publicIPAddressDTO.getIpv4Address(), diskSizeGb, sourceImageDTO.getName());
             computeRepository.save(compute);
-
+            
             return responseComputeDTO;
         } catch (Exception exception) {
+            System.out.println(exception);
             return null;
         }
     }
@@ -300,6 +314,8 @@ public class ComputeServiceImpl implements ComputeService {
 
             // Operation response = addressClient.insertAsync(request).get();
             addressClient.deleteAsync(request);
+        } catch (Exception exception) {
+            System.out.println(exception);
         }
     }
 
@@ -353,7 +369,6 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Override
     public ComputeDTO getComputeInstance(String instanceName) {
-
         Compute compute = computeRepository.findByInstanceName(instanceName);
 
         AddressDTO addressDTO = new AddressDTO();
@@ -362,10 +377,15 @@ public class ComputeServiceImpl implements ComputeService {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName(compute.getMachineType());
 
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName(compute.getSourceImage());
+
         ComputeDTO computeDTO = new ComputeDTO();
         computeDTO.setInstanceName(compute.getInstanceName());
         computeDTO.setAddress(addressDTO);
         computeDTO.setMachineType(machineTypeDTO);
+        computeDTO.setDiskSizeGb(compute.getDiskSizeGb());
+        computeDTO.setSourceImage(sourceImageDTO);
 
         return computeDTO;
     }

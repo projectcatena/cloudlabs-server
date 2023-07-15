@@ -1,15 +1,17 @@
 package com.cloudlabs.server.compute;
 
-import com.cloudlabs.server.compute.dto.AddressDTO;
-import com.cloudlabs.server.compute.dto.ComputeDTO;
-import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import com.cloudlabs.server.compute.dto.AddressDTO;
+import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.compute.dto.MachineTypeDTO;
+import com.google.cloud.compute.v1.AttachedDisk;
+
 public interface ComputeService {
-    ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata);
+    ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata, AttachedDisk disk);
 
     ComputeDTO deleteInstance(String instanceName)
             throws InterruptedException, ExecutionException, TimeoutException,

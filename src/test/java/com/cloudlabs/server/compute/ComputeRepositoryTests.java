@@ -1,6 +1,6 @@
 package com.cloudlabs.server.compute;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ public class ComputeRepositoryTests {
 
     @BeforeEach
     void setup() {
-        Compute compute = new Compute("test", "e2-micro","10.10.1.1" );
+        Compute compute = new Compute("test", "e2-micro","10.10.1.1",60,"windows-server-2019");
         computeRepository.save(compute);
     }
 
