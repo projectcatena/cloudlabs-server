@@ -1,18 +1,12 @@
 package com.cloudlabs.server.user;
 
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-// This will be AUTO IMPLEMENTED by Spring into a Bean called userRepository
-// CRUD refers Create, Read, Update, Delete
-
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    
-    User findByEmail(String email);
+  Optional<User> findByEmail(String email);
 
-    /*
-    @Query("UPDATE User u SET u.lastLogin=:lastLogin WHERE u.username = ?#{ principal?.username }")
-    @Modifying
-    @Transactional
-    void updateLastLogin(@Param("lastLogin") Date lastLogin);
-     */
+  Optional<User> findByUsername(String username);
 }

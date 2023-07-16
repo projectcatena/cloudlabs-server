@@ -1,28 +1,38 @@
-package com.cloudlabs.server;
+package com.cloudlabs.server.security;
 
+import com.cloudlabs.server.security.jwt.JwtAuthenticationFilter;
 import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.stereotype.Component;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@Component
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
 
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
+
     public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
+    /*
+     * Apply the security filters by chaining them.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
@@ -35,19 +45,28 @@ public class WebSecurityConfig {
 
         http.cors()
                 .and()
+                .csrf()
+                .disable()
                 .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll() // allow CORS option call
-                .antMatchers("/login", "/signout", "/signup", "/error")
+                .antMatchers("/auth/login", "/auth/signout", "/auth/register", "/error")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and()
-                .csrf()
-                .disable();
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class);
+
         // JWT Validation Configuration
-        http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(
-                authenticationConverter());
+        /*
+         * http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(
+         * authenticationConverter());
+         */
 
         /*
          * .formLogin()
@@ -56,18 +75,6 @@ public class WebSecurityConfig {
          * .and()
          */
         return http.build();
-    }
-
-    // Converts Bearer token to Jwt token
-    @Bean
-    protected JwtAuthenticationConverter authenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("");
-        authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
     }
 
     // CORS Configuration for Apache Guacamole Traffic
@@ -85,4 +92,19 @@ public class WebSecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
+    // Converts Bearer token to Jwt token
+    /*
+     * @Bean
+     * protected JwtAuthenticationConverter authenticationConverter() {
+     * JwtGrantedAuthoritiesConverter authoritiesConverter = new
+     * JwtGrantedAuthoritiesConverter();
+     * authoritiesConverter.setAuthorityPrefix("");
+     * authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
+     *
+     * JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+     * converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+     * return converter;
+     * }
+     */
 }
