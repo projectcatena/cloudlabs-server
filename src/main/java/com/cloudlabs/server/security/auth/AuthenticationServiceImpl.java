@@ -1,6 +1,7 @@
 package com.cloudlabs.server.security.auth;
 
 import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.security.auth.dto.AuthenticationResponseDTO;
 import com.cloudlabs.server.security.auth.dto.LoginDTO;
@@ -12,17 +13,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
 
   @Autowired
   private UserRepository userRepository;
+
+  @Autowired
+  private RoleRepository roleRepository;
 
   @Autowired
   private PasswordEncoder passwordEncoder;
@@ -62,7 +68,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
    */
   @Override
   public AuthenticationResponseDTO register(RegisterDTO registerDTO) {
-    List<Role> roles = Arrays.asList(new Role(RoleType.USER), new Role(RoleType.TUTOR));
+    Role userRole = roleRepository.findByName(RoleType.USER);
+
+    if (userRole == null) {
+      userRole = new Role(RoleType.USER);
+    }
+
+    if (userRepository.findByEmail(registerDTO.getEmail()).isPresent() ||
+        userRepository.findByUsername(registerDTO.getUsername()).isPresent()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+          "User already exists!");
+    }
+
+    List<Role> roles = Arrays.asList(userRole);
     User user = new User(registerDTO.getFullname(), registerDTO.getUsername(),
         registerDTO.getEmail(),
         passwordEncoder.encode(registerDTO.getPassword()), roles);
