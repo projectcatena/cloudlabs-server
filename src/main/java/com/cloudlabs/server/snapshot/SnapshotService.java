@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.snapshot.dto.SaveSnapshotDto;
 import com.google.cloud.compute.v1.AttachedDisk;
 
 /**
@@ -19,9 +20,9 @@ public interface SnapshotService {
     void deleteSnapshot(String snapshotName) //String projectId, 
         throws IOException, ExecutionException, InterruptedException, TimeoutException;
 
-    List<SaveSnapshot> listSnapshots() throws IOException; //String projectId, 
+    List<SaveSnapshotDto> listSnapshots() throws IOException; //String projectId, 
     
-    void getSnapshot(String snapshotName) throws IOException; //String projectId, 
+    //void getSnapshot(String snapshotName) throws IOException; //String projectId, 
 
     ComputeDTO createFromSnapshot(
         String instanceName, String snapshotName)

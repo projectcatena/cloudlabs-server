@@ -17,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
-import com.google.cloud.compute.v1.AttachedDisk;
 
 @RestController
 @RequestMapping("/compute")
@@ -29,14 +28,10 @@ public class ComputeController {
 	// Create a new public instance with the provided "instanceName" value in the
 	// specified project and zone.
 	@PostMapping("/create")
-	public ComputeDTO create(@RequestBody ComputeDTO computeDTO, AttachedDisk disk)
+	public ComputeDTO create(@RequestBody ComputeDTO computeDTO)
 			throws IOException, InterruptedException, ExecutionException,
 			TimeoutException {
-		if(disk.getDiskSizeGb() == 0){
-			disk = null;
-			System.out.println(disk);
-		}
-		ComputeDTO response = computeService.createPublicInstance(computeDTO,disk);
+		ComputeDTO response = computeService.createPublicInstance(computeDTO,null);
 
 		if (response == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -77,7 +72,6 @@ public class ComputeController {
 			IOException {
 		computeService.releaseStaticExternalIPAddress(
 		String.format("%s-public-ip", computeDTO.getInstanceName()));
-		System.out.println(computeDTO.getInstanceName());
 		ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
 		
 

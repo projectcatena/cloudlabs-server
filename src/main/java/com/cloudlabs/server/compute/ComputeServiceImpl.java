@@ -100,7 +100,6 @@ public class ComputeServiceImpl implements ComputeService {
             // Instance creation requires at least one persistent disk and one network
             // interface.
             Vector<AttachedDisk> disks = new Vector<>();
-            System.out.println(disk);
             if (disk == null) {
                 AttachedDisk new_disk = AttachedDisk.newBuilder()
                         .setBoot(true)

@@ -1,6 +1,7 @@
 package com.cloudlabs.server.snapshot;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.snapshot.dto.SaveSnapshotDto;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
@@ -146,35 +148,24 @@ public class SnapshotServiceImpl implements SnapshotService {
     }
 
     @Override
-    public List<SaveSnapshot> listSnapshots() throws IOException { //String snapshotName
-
-        // Initialize client that will be used to send requests. This client only needs to be created
-        // once, and can be reused for multiple requests. After completing all of your requests, call
-        // the `snapshotsClient.close()` method on the client to safely
-        // clean up any remaining background resources.
-        /*
-        try (SnapshotsClient snapshotsClient = SnapshotsClient.create()) {
-
-        // Create the List Snapshot request.
-            ListSnapshotsRequest listSnapshotsRequest = ListSnapshotsRequest.newBuilder()
-                .setProject(projectId)
-                .setFilter(filter)
-                .build();
-
-            System.out.println("List of snapshots:");
-            for (Snapshot snapshot : snapshotsClient.list(listSnapshotsRequest).iterateAll()) {
-                System.out.println(snapshot.getName());
-            }
-        }
-        */
+    public List<SaveSnapshotDto> listSnapshots() throws IOException { //String snapshotName
+        List<SaveSnapshotDto> saveSnapshotDtos = new ArrayList<>();
 
         List<SaveSnapshot> saveSnapshot = snapshotRepository.findAll();
 
-        return saveSnapshot;
+        for (SaveSnapshot i : saveSnapshot) {
+            SaveSnapshotDto saveSnapshotDto = new SaveSnapshotDto();
+            saveSnapshotDto.setSnapshotName(i.getSnapshotName());
+            saveSnapshotDto.setDescription(i.getDescription());
+            saveSnapshotDtos.add(saveSnapshotDto);
+        }
+
+        return saveSnapshotDtos;
         
     }
 
     // Get information about a snapshot.
+    /*
     @Override
     public void getSnapshot(String snapshotName) throws IOException {
         // Initialize client that will be used to send requests. This client only needs to be created
@@ -186,8 +177,9 @@ public class SnapshotServiceImpl implements SnapshotService {
             System.out.printf("Retrieved the snapshot: %s", snapshot.getName());
         }
     }
+    */
 
-    //Attaches snapshot to instance's disk
+    // Attaches snapshot to instance's disk
     /**
    * @param diskType the type of disk you want to create. This value uses the following format:
    * "zones/{zone}/diskTypes/(pd-standard|pd-ssd|pd-balanced|pd-extreme)". For example:
