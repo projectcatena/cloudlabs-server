@@ -81,7 +81,6 @@ public class ComputeController {
 	}
 
 	@PostMapping("/reset")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO resetInstance(@RequestBody ComputeDTO resetRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
 		
 		ComputeDTO response = computeService.resetInstance(resetRequest.getInstanceName());
@@ -90,7 +89,6 @@ public class ComputeController {
 	}
 
 	@PostMapping("/status")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO getInstanceStatus(@RequestBody ComputeDTO getStatus) throws IOException {
 
 		ComputeDTO response = computeService.getInstanceStatus(getStatus.getInstanceName());
@@ -99,7 +97,6 @@ public class ComputeController {
 	}
 
 	@PostMapping("/stop")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO stopInstance(@RequestBody ComputeDTO stopRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
 
 		ComputeDTO response = computeService.stopInstance(stopRequest.getInstanceName());
@@ -108,7 +105,6 @@ public class ComputeController {
 	}
 
 	@PostMapping("/start")
-	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO startInstance(@RequestBody ComputeDTO startRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
 
 		ComputeDTO response = computeService.startInstance(startRequest.getInstanceName());

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,6 +50,7 @@ public class ModuleController {
     }
 
     @PostMapping("/create")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     public ModuleDTO addModule(@RequestBody ModuleDTO moduleDTO) throws IOException, InterruptedException, ExecutionException, TimeoutException {
 
         ModuleDTO response = moduleService.addModule(moduleDTO);
@@ -61,6 +63,7 @@ public class ModuleController {
     }
 
     @DeleteMapping("/delete/{moduleId}")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     public ModuleDTO deleteModule(@PathVariable String moduleId) throws InterruptedException, ExecutionException, TimeoutException, IOException {
         
         Long moduleIdAsLong = Long.valueOf(moduleId);
@@ -70,6 +73,7 @@ public class ModuleController {
     }
 
     @PutMapping("/update/{moduleId}")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     public ModuleDTO updateModule(@PathVariable String moduleId, @RequestBody ModuleDTO moduleDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
         
         Long moduleIdAsLong = Long.valueOf(moduleId);
