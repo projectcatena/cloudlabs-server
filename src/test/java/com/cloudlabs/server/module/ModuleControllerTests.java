@@ -67,7 +67,7 @@ public class ModuleControllerTests {
         mockMvc.perform(MockMvcRequestBuilders.post("/Modules/create")
         .contentType(MediaType.APPLICATION_JSON)
         .content(jsonString))
-        .andExpect(MockMvcResultMatchers.status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.status().isForbidden())
         .andReturn();
     }
 
