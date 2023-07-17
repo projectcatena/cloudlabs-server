@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
-import com.cloudlabs.server.snapshot.dto.SaveSnapshotDto;
+import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
@@ -148,13 +148,13 @@ public class SnapshotServiceImpl implements SnapshotService {
     }
 
     @Override
-    public List<SaveSnapshotDto> listSnapshots() throws IOException { //String snapshotName
-        List<SaveSnapshotDto> saveSnapshotDtos = new ArrayList<>();
+    public List<SaveSnapshotDTO> listSnapshots() throws IOException { //String snapshotName
+        List<SaveSnapshotDTO> saveSnapshotDtos = new ArrayList<>();
 
         List<SaveSnapshot> saveSnapshot = snapshotRepository.findAll();
 
         for (SaveSnapshot i : saveSnapshot) {
-            SaveSnapshotDto saveSnapshotDto = new SaveSnapshotDto();
+            SaveSnapshotDTO saveSnapshotDto = new SaveSnapshotDTO();
             saveSnapshotDto.setSnapshotName(i.getSnapshotName());
             saveSnapshotDto.setDescription(i.getDescription());
             saveSnapshotDtos.add(saveSnapshotDto);

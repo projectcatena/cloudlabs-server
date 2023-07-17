@@ -4,16 +4,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;;
 
 @JsonInclude(Include.NON_DEFAULT) // Ignore null fields, and default values (like 0 for long type)
-public class SaveSnapshotDto {
+public class SaveSnapshotDTO {
 
     private String snapshotName;
     private String description;
+    private String instanceName;
 
-    public SaveSnapshotDto() {}
+    public SaveSnapshotDTO() {}
 
-    public SaveSnapshotDto(String snapshotName, String description) {
+    public SaveSnapshotDTO(String snapshotName, String description, String instanceName) {
         this.snapshotName = snapshotName;
         this.description = description;
+        this.instanceName = instanceName;
     }
 
     public String getSnapshotName() {
@@ -30,6 +32,14 @@ public class SaveSnapshotDto {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getInstanceName() {
+        return this.instanceName;
+    }
+
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
     }
 
 }

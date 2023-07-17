@@ -33,7 +33,7 @@ public class ComputeController {
 	public ComputeDTO create(@RequestBody ComputeDTO computeDTO)
 			throws IOException, InterruptedException, ExecutionException,
 			TimeoutException {
-		ComputeDTO response = computeService.createPublicInstance(computeDTO,null);
+		ComputeDTO response = computeService.createPublicInstance(computeDTO);
 
 		if (response == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -60,7 +60,7 @@ public class ComputeController {
 		return response;
 	}
 
-	@PostMapping("/instance")
+	@GetMapping("/instance")
 	public ComputeDTO getComputeInstance(@RequestBody ComputeDTO computeDTO)
 			throws IOException {
 

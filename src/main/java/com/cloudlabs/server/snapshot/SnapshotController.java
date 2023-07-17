@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
-import com.cloudlabs.server.snapshot.dto.SaveSnapshotDto;
+import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
 
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RequestMapping("snapshot")
@@ -31,28 +31,28 @@ public class SnapshotController {
         this.snapshotService = snapshotService;
     }
 
-    @PostMapping(path = "create", consumes = (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+    @PostMapping(path = "create")
     @PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
     public String createSnapshot(
-        @RequestParam String snapshotName,
-        @RequestParam String diskName,
-        @RequestParam String description
+        @RequestBody SaveSnapshotDTO saveSnapshotDTO
     ) throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        snapshotService.createSnapshot(snapshotName, diskName, description);
+        snapshotService.createSnapshot(saveSnapshotDTO.getSnapshotName(),
+        saveSnapshotDTO.getInstanceName(),
+        saveSnapshotDTO.getDescription());
         return "create snapshot";
     }
 
-    @DeleteMapping(path = "delete", consumes = (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+    @DeleteMapping(path = "delete")
     @PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
     public String deleteSnapshot(
-        @RequestParam String snapshotName) throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        snapshotService.deleteSnapshot(snapshotName);
+        @RequestBody SaveSnapshotDTO saveSnapshotDTO) throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        snapshotService.deleteSnapshot(saveSnapshotDTO.getSnapshotName());
         return "snapshot deleted";
     }
 
     @GetMapping(path = "list")
     @PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
-    public List<SaveSnapshotDto> listSnapshots() throws IOException {
+    public List<SaveSnapshotDTO> listSnapshots() throws IOException {
         return snapshotService.listSnapshots();
     }
 
@@ -70,11 +70,11 @@ public class SnapshotController {
     @PostMapping(path = "revert", consumes = (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
     @PreAuthorize("hasAnyAuthority('USER','TUTOR','ADMIN')")
     public String revertToSnapshot(
-        @RequestParam String instanceName,
-        @RequestParam String snapshotName
+        @RequestBody SaveSnapshotDTO  saveSnapshotDTO
     ) throws InterruptedException, ExecutionException, TimeoutException,IOException {
         
-        ComputeDTO result = snapshotService.createFromSnapshot(instanceName, snapshotName);
+        ComputeDTO result = snapshotService.createFromSnapshot(saveSnapshotDTO.getInstanceName(),
+        saveSnapshotDTO.getSnapshotName());
         if (result != null) {
             return "revert snapshot";
         }
