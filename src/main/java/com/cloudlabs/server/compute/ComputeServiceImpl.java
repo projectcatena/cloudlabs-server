@@ -36,7 +36,22 @@ import com.google.cloud.compute.v1.MachineTypesClient;
 import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
+import com.google.cloud.compute.v1.Operation.Status;
+import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
+import com.google.cloud.compute.v1.StartInstanceRequest;
+import com.google.cloud.compute.v1.StopInstanceRequest;
+import com.google.cloud.compute.v1.GetInstanceRequest;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -387,5 +402,98 @@ public class ComputeServiceImpl implements ComputeService {
         computeDTO.setSourceImage(sourceImageDTO);
 
         return computeDTO;
+    }
+
+    @Override
+    public ComputeDTO resetInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
+
+            ResetInstanceRequest resetInstanceRequest = ResetInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.resetAsync(
+                resetInstanceRequest);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.getStatus() == Status.DONE) {
+                System.out.println("Instance reset successfully ! ");
+            }
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setInstanceName(instanceName);
+            computeDTO.setStatus(response.getStatus().name());
+            return computeDTO;
+
+        }   
+    }
+
+    @Override
+    public ComputeDTO getInstanceStatus(String instanceName) throws IOException {
+        try(InstancesClient instancesClient = InstancesClient.create()) {
+            GetInstanceRequest request = GetInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            Instance response = instancesClient.get(request);
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setStatus(response.getStatus());
+            return computeDTO;
+        }
+    }
+
+    @Override
+    public ComputeDTO stopInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        try(InstancesClient instancesClient = InstancesClient.create()) {
+
+            StopInstanceRequest stopInstanceRequest = StopInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.stopAsync(
+                stopInstanceRequest);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.getStatus() == Status.DONE) {
+                System.out.println("Instance stopped successfully ! ");
+            }
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setInstanceName(instanceName);
+            computeDTO.setStatus(response.getStatus().name());
+            return computeDTO;
+        }
+    }
+
+    @Override
+    public ComputeDTO startInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        try(InstancesClient instancesClient = InstancesClient.create()) {
+
+            StartInstanceRequest startInstanceRequest = StartInstanceRequest.newBuilder()
+            .setProject(project)
+            .setZone(zone)
+            .setInstance(instanceName)
+            .build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.startAsync(
+            startInstanceRequest);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.getStatus() == Status.DONE) {
+                System.out.println("Instance started successfully ! ");
+            }
+
+            ComputeDTO computeDTO = new ComputeDTO();
+            computeDTO.setInstanceName(instanceName);
+            computeDTO.setStatus(response.getStatus().name());
+            return computeDTO;
+        }
     }
 }
