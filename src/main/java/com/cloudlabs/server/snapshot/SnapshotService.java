@@ -14,10 +14,10 @@ import com.google.cloud.compute.v1.AttachedDisk;
  */
 public interface SnapshotService {
 
-    void createSnapshot(String snapshotName, String diskName, String description) //String projectId, String diskName, String snapshotName,String zone, String region, String location, String diskProjectId
+    SaveSnapshotDTO createSnapshot(String snapshotName, String diskName, String description) //String projectId, String diskName, String snapshotName,String zone, String region, String location, String diskProjectId
         throws IOException, ExecutionException, InterruptedException, TimeoutException;
     
-    void deleteSnapshot(String snapshotName) //String projectId, 
+    SaveSnapshotDTO deleteSnapshot(String snapshotName) //String projectId, 
         throws IOException, ExecutionException, InterruptedException, TimeoutException;
 
     List<SaveSnapshotDTO> listSnapshots() throws IOException; //String projectId, 

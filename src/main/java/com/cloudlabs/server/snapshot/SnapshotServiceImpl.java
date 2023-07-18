@@ -55,7 +55,7 @@ public class SnapshotServiceImpl implements SnapshotService {
     }
 
     @Override
-    public void createSnapshot(String snapshotName, String diskName, String description)
+    public SaveSnapshotDTO createSnapshot(String snapshotName, String diskName, String description)
         throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         // Initialize client that will be used to send requests. This client only needs to be created
@@ -109,7 +109,7 @@ public class SnapshotServiceImpl implements SnapshotService {
 
         if (operation.hasError()) {
             System.out.println("Snapshot creation failed!" + operation);
-            return;
+            return null;
         }
 
         // Retrieve the created snapshot.
@@ -119,12 +119,16 @@ public class SnapshotServiceImpl implements SnapshotService {
         SaveSnapshot saveSnapshot = new SaveSnapshot(snapshotName, description);
         snapshotRepository.save(saveSnapshot);
 
+        SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO(snapshotName, description, diskName)
+;
+        return saveSnapshotDTO;
+
         }
     }
 
     // Delete a snapshot of a disk.
     @Override
-    public void deleteSnapshot(String snapshotName)
+    public SaveSnapshotDTO deleteSnapshot(String snapshotName)
         throws IOException, ExecutionException, InterruptedException, TimeoutException {
         SaveSnapshot saveSnapshot = snapshotRepository.findBySnapshotName(snapshotName);
         // Initialize client that will be used to send requests. This client only needs to be created
@@ -138,13 +142,18 @@ public class SnapshotServiceImpl implements SnapshotService {
 
         if (operation.hasError()) {
             System.out.println("Snapshot deletion failed!" + operation);
-            return;
+            return null;
         }
 
         snapshotRepository.delete(saveSnapshot);
 
         System.out.println("Snapshot deleted!");
         }
+
+        SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO();
+        saveSnapshotDTO.setSnapshotName(snapshotName);
+
+        return saveSnapshotDTO;
     }
 
     @Override
