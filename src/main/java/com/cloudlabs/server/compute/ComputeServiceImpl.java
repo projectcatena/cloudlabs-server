@@ -6,6 +6,7 @@ import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.UserService;
 import com.google.api.gax.longrunning.OperationFuture;
 import com.google.cloud.compute.v1.AccessConfig;
@@ -37,7 +38,9 @@ import com.google.cloud.compute.v1.StopInstanceRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -58,6 +61,9 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
@@ -201,7 +207,7 @@ public class ComputeServiceImpl implements ComputeService {
 
             User user = userService.findByEmail(email);
 
-            List<User> users = Arrays.asList(user);
+            Set<User> users = new HashSet<>(Arrays.asList(user));
 
             // Successful Instance Creation, save to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
@@ -388,7 +394,20 @@ public class ComputeServiceImpl implements ComputeService {
     @Override
     public ComputeDTO getComputeInstance(String instanceName) {
 
-        Compute compute = computeRepository.findByInstanceName(instanceName);
+        // Get email from Jwt token using context
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getCredentials();
+
+        String email = (String) jwt.getClaims().get("email");
+
+        // Ensure that only assigned users can see the instance
+        Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, instanceName)
+                .orElse(null);
+
+        if (compute == null) {
+            return null;
+        }
 
         AddressDTO addressDTO = new AddressDTO();
         addressDTO.setIpv4Address(compute.getIpv4Address());
@@ -508,7 +527,7 @@ public class ComputeServiceImpl implements ComputeService {
      */
     @Override
     public ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO) {
-        List<User> users = new ArrayList<>();
+        Set<User> users = new HashSet<>();
 
         for (UserDto userDTO : computeDTO.getUsers()) {
             User user = userService.findByEmail(userDTO.getEmail());
@@ -516,7 +535,59 @@ public class ComputeServiceImpl implements ComputeService {
         }
 
         Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName());
+        // Changes made to entity will be flushed to db, no need explicit save()
         compute.setUsers(users);
+
+        return computeDTO;
+    }
+
+    /*
+     * Allow tutor to remove/unassign users from a compute instance entity
+     */
+    @Override
+    public ComputeDTO removeComputeInstanceUsers(ComputeDTO computeDTO) {
+
+        Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName());
+        // Get list of users from entity
+        Set<User> users = compute.getUsers();
+
+        /*
+         * users = users.stream()
+         * .filter(user -> userDTOs.stream()
+         * .map(UserDto::getEmail)
+         * .anyMatch(UserDTOEmail ->
+         * user.getEmail().equals(UserDTOEmail))) .collect(Collectors.toSet());
+         */
+
+        List<UserDto> userDTOs = new ArrayList<>();
+
+        // Get a list of users to remove
+        for (UserDto userDto : computeDTO.getUsers()) {
+            // Ensure valid user
+            User user = userRepository.findByEmail(userDto.getEmail());
+
+            // If is in list of assigned users, consider valid
+            if (users.contains(user)) {
+                users.remove(user);
+
+                // Add to list of users removed
+                userDTOs.add(userDto);
+            }
+        }
+
+        /*
+         * Boolean isSuccess = users.removeIf(
+         * user -> userDTOs.stream()
+         * .map(UserDto::getEmail)
+         * .anyMatch(UserDTOEmail -> user.getEmail() == UserDTOEmail));
+         */
+
+        // users.removeIf(user -> user.getEmail() == userDto.getEmail());
+
+        compute.setUsers(users);
+        computeRepository.save(compute);
+
+        computeDTO.setUsers(userDTOs);
 
         return computeDTO;
     }

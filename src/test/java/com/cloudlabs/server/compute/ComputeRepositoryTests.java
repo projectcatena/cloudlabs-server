@@ -1,12 +1,13 @@
 package com.cloudlabs.server.compute;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.cloudlabs.server.user.User;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,7 +48,7 @@ public class ComputeRepositoryTests {
     @Test
     void createCompute_whenInstanceDetailsGiven() {
 
-        List<User> users = new ArrayList<>();
+        Set<User> users = new HashSet<>();
 
         User user = new User();
         user.setName("test");
@@ -76,14 +77,6 @@ public class ComputeRepositoryTests {
     }
 
     @Test
-    void deleteComputeInstance_whenInstanceNameGiven() {
-        // Compute compute =
-        // computeRepository.findByInstanceName("windows-server-2019");
-        computeRepository.deleteByInstanceName("test");
-        // computeRepository.delete(compute);
-    }
-
-    @Test
     void listUserComputeInstances_whenEmailGiven() {
         List<Compute> computeInstances = computeRepository.findByUsers_Email("test@gmail.com");
 
@@ -93,5 +86,12 @@ public class ComputeRepositoryTests {
                 .anySatisfy(users -> assertThat(users)
                         .extracting(User::getEmail)
                         .anyMatch(value -> value.matches("test@gmail.com")));
+    }
+
+    @Test
+    void emptyListUserComputeInstances_whenEmailGivenAndUserIsNotAssignedAnyComputeInstances() {
+        List<Compute> computeInstances = computeRepository.findByUsers_Email("test2@gmail.com");
+
+        assertNull(computeInstances);
     }
 }

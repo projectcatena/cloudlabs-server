@@ -126,4 +126,12 @@ public class ComputeController {
 
 		return response;
 	}
+
+	@PostMapping("/remove-users")
+	public ComputeDTO removeComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
+
+		ComputeDTO response = computeService.removeComputeInstanceUsers(computeDTO);
+
+		return response;
+	}
 }

@@ -1,14 +1,23 @@
 package com.cloudlabs.server.compute;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserDto;
+import com.cloudlabs.server.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +42,12 @@ public class ComputeControllerTests {
 
     @Autowired
     private ComputeService computeService;
+
+    @Autowired
+    private ComputeRepository computeRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // Since get and list require an instance to be created first, the tests for
     // get and list will all be in this specific test case
@@ -362,5 +377,90 @@ public class ComputeControllerTests {
                 deleteresponse.getAddress().getName());
 
         assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void addComputeInstanceUsers_whenValidParametersGiven() throws Exception {
+        // Create an entry in database will do, as this doesn't need GCP to test
+        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1", null);
+        computeRepository.save(compute);
+
+        // Create new test user
+        User testUser = new User();
+        testUser.setName("test3");
+        testUser.setEmail("test3@gmail.com");
+        // encrypt the password using spring security
+        testUser.setPassword("test@123");
+        userRepository.save(testUser);
+
+        UserDto userDto = new UserDto();
+        userDto.setEmail("test3@gmail.com");
+        List<UserDto> userDtos = Arrays.asList(userDto);
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("mock-entry");
+        request.setUsers(userDtos);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/add-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
+                userDto.getEmail(), compute.getInstanceName()));
+
+        // Clean up
+        computeRepository.delete(compute);
+        userRepository.delete(testUser);
+    }
+
+    @Test
+    void removeComputeInstanceUsers_whenValidParametersGiven() throws Exception {
+
+        User user = new User();
+        user.setName("test4");
+        user.setEmail("test4@gmail.com");
+        // encrypt the password using spring security
+        user.setPassword("test@123");
+
+        Set<User> users = new HashSet<>();
+        users.add(user);
+
+        // Create an entry in database will do, as this doesn't need GCP to test
+        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1", users);
+        computeRepository.save(compute);
+
+        assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
+                user.getEmail(), compute.getInstanceName()));
+
+        UserDto userDto = new UserDto();
+        userDto.setEmail("test4@gmail.com");
+        List<UserDto> userDtos = Arrays.asList(userDto);
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("mock-entry-remove");
+        request.setUsers(userDtos);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/remove-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        assertThat(computeRepository
+                .findByUsers_EmailAndInstanceName(userDto.getEmail(),
+                        request.getInstanceName())
+                .isEmpty());
+
+        // Clean up
+        computeRepository.delete(compute);
+        userRepository.delete(user);
     }
 }
