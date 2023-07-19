@@ -3,13 +3,20 @@ package com.cloudlabs.server.compute;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +41,12 @@ public class ComputeControllerTests {
 
     @Autowired
     private ComputeService computeService;
+
+    @Autowired
+    private ComputeRepository computeRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // Since get and list require an instance to be created first, the tests for
     // get and list will all be in this specific test case
@@ -228,14 +241,17 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
-        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        JsonNode jsonNode = objectMapper.createObjectNode().put(
+                "instanceName", response.getInstanceName());
         String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
         // Reset instance
-        mockMvc.perform(MockMvcRequestBuilders.post("/compute/reset")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString2))
+        mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString2))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -272,14 +288,17 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
-        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        JsonNode jsonNode = objectMapper.createObjectNode().put(
+                "instanceName", response.getInstanceName());
         String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
         // Get instance status
-        mockMvc.perform(MockMvcRequestBuilders.post("/compute/status")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString2))
+        mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString2))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -316,14 +335,17 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        ComputeDTO response = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
-        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response.getInstanceName());
+        ComputeDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        JsonNode jsonNode = objectMapper.createObjectNode().put(
+                "instanceName", response.getInstanceName());
         String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
-        // Stop instance 
-        mockMvc.perform(MockMvcRequestBuilders.post("/compute/stop")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString2))
+        // Stop instance
+        mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/stop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString2))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -367,14 +389,17 @@ public class ComputeControllerTests {
 
         assertNotNull(resetComputeDTO.getStatus());
 
-        ComputeDTO response2 = objectMapper.readValue(result.getResponse().getContentAsString(), ComputeDTO.class); 
-        JsonNode jsonNode = objectMapper.createObjectNode().put("instanceName", response2.getInstanceName());
+        ComputeDTO response2 = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ComputeDTO.class);
+        JsonNode jsonNode = objectMapper.createObjectNode().put(
+                "instanceName", response2.getInstanceName());
         String jsonString2 = objectMapper.writeValueAsString(jsonNode);
 
         // Start instance
-        mockMvc.perform(MockMvcRequestBuilders.post("/compute/start")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonString2))
+        mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString2))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -411,10 +436,10 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/reset")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("Invalid"))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("Invalid"))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andReturn();
 
@@ -451,10 +476,10 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/status")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("Invalid"))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("Invalid"))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andReturn();
 
@@ -491,10 +516,10 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/stop")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("Invalid"))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/stop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("Invalid"))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andReturn();
 
@@ -538,9 +563,10 @@ public class ComputeControllerTests {
 
         assertNotNull(resetComputeDTO.getStatus());
 
-        this.mockMvc.perform(MockMvcRequestBuilders.post("/compute/start")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("Invalid"))
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("Invalid"))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andReturn();
 
@@ -552,5 +578,92 @@ public class ComputeControllerTests {
                 deleteresponse.getAddress().getName());
 
         assertNotNull(deleteComputeDTO.getStatus());
+    }
+
+    @Test
+    void addComputeInstanceUsers_whenValidParametersGiven() throws Exception {
+        // Create an entry in database will do, as this doesn't need GCP to test
+        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1");
+        computeRepository.save(compute);
+
+        // Create new test user
+        User user = new User();
+        user.setUsername("test3");
+        user.setFullname("Bob");
+        user.setEmail("test3@gmail.com");
+        user.setPassword("test@123");
+        userRepository.save(user);
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setEmail("test3@gmail.com");
+        List<UserDTO> userDTOs = Arrays.asList(userDTO);
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("mock-entry");
+        request.setUsers(userDTOs);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/add-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        assertTrue(computeRepository
+                .findByUsers_EmailAndInstanceName(userDTO.getEmail(),
+                        compute.getInstanceName())
+                .isPresent());
+
+        // Clean up
+        computeRepository.delete(compute);
+        userRepository.delete(user);
+    }
+
+    @Test
+    void removeComputeInstanceUsers_whenValidParametersGiven() throws Exception {
+
+        User user = new User();
+        user.setUsername("test4");
+        user.setFullname("John");
+        user.setEmail("test4@gmail.com");
+        user.setPassword("test@123");
+
+        Set<User> users = new HashSet<>();
+        users.add(user);
+
+        // Create an entry in database will do, as this doesn't need GCP to test
+        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1", users);
+        computeRepository.save(compute);
+
+        assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
+                user.getEmail(), compute.getInstanceName()));
+
+        UserDTO userDto = new UserDTO();
+        userDto.setEmail("test4@gmail.com");
+        List<UserDTO> userDtos = Arrays.asList(userDto);
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("mock-entry-remove");
+        request.setUsers(userDtos);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/remove-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        assertThat(computeRepository
+                .findByUsers_EmailAndInstanceName(userDto.getEmail(),
+                        request.getInstanceName())
+                .isEmpty());
+
+        // Clean up
+        computeRepository.delete(compute);
+        userRepository.delete(user);
     }
 }

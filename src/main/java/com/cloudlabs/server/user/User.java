@@ -1,5 +1,6 @@
 package com.cloudlabs.server.user;
 
+import com.cloudlabs.server.compute.Compute;
 import com.cloudlabs.server.role.Role;
 import java.util.Collection;
 import java.util.List;
