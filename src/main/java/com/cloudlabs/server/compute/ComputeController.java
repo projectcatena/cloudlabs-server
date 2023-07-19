@@ -120,6 +120,7 @@ public class ComputeController {
 	}
 
 	@PostMapping("/add-users")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO addComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
 
 		ComputeDTO response = computeService.addComputeInstanceUsers(computeDTO);
@@ -128,6 +129,7 @@ public class ComputeController {
 	}
 
 	@PostMapping("/remove-users")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
 	public ComputeDTO removeComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
 
 		ComputeDTO response = computeService.removeComputeInstanceUsers(computeDTO);

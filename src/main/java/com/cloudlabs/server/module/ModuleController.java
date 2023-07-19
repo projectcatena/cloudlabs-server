@@ -1,6 +1,7 @@
 package com.cloudlabs.server.module;
 
 import com.cloudlabs.server.module.dto.ModuleDTO;
+import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.List;
@@ -113,6 +114,21 @@ public class ModuleController {
             TimeoutException {
 
         ModuleDTO response = moduleService.removeUsers(moduleDTO);
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        return response;
+    }
+
+    @PostMapping("/list-users")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public List<UserDTO> listUsers(@RequestBody ModuleDTO moduleDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        List<UserDTO> response = moduleService.listUsers(moduleDTO);
 
         if (response == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

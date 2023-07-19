@@ -8,6 +8,7 @@ import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -286,7 +287,7 @@ public class ModuleControllerTests {
     }
 
     @Test
-    void addModuleUsers_whenValidParametersGiven() throws Exception {
+    void addAndListModuleUsers_whenValidParametersGiven() throws Exception {
         Module module = new Module("subtitle", "name", "description");
         moduleRepository.save(module);
 
@@ -318,6 +319,19 @@ public class ModuleControllerTests {
 
         assertFalse(
                 moduleRepository.findByUsers_Email(userDTO.getEmail()).isEmpty());
+
+        MvcResult result = this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/list-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        List<UserDTO> response = objectMapper.readValue(result.getResponse().getContentAsString(),
+                new TypeReference<List<UserDTO>>() {
+                });
+
+        assertFalse(response.isEmpty());
 
         // Clean up
         moduleRepository.deleteById(module.getModuleId());
