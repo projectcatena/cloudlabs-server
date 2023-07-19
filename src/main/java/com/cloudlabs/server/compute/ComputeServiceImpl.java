@@ -517,6 +517,7 @@ public class ComputeServiceImpl implements ComputeService {
             return null;
         }
 
+        List<UserDTO> addedUsers = new ArrayList<>();
         Set<User> users = new HashSet<>();
 
         for (UserDTO userDTO : computeDTO.getUsers()) {
@@ -524,11 +525,13 @@ public class ComputeServiceImpl implements ComputeService {
                     .orElseThrow(
                             () -> new UsernameNotFoundException("User not found!"));
             users.add(user);
+            addedUsers.add(userDTO);
         }
 
-        // Changes made to entity will be flushed to db, no need explicit save()
         compute.get().getUsers().addAll(users);
         computeRepository.save(compute.get());
+
+        computeDTO.setUsers(addedUsers);
 
         return computeDTO;
     }
