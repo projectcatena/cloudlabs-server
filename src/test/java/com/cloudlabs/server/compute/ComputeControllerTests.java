@@ -617,8 +617,8 @@ public class ComputeControllerTests {
                 .isPresent());
 
         // Clean up
-        computeRepository.delete(compute);
-        userRepository.delete(user);
+        computeRepository.deleteByInstanceName(request.getInstanceName());
+        userRepository.deleteByEmail(userDTO.getEmail());
     }
 
     @Test
@@ -640,13 +640,13 @@ public class ComputeControllerTests {
         assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
                 user.getEmail(), compute.getInstanceName()));
 
-        UserDTO userDto = new UserDTO();
-        userDto.setEmail("test4@gmail.com");
-        List<UserDTO> userDtos = Arrays.asList(userDto);
+        UserDTO userDTO = new UserDTO();
+        userDTO.setEmail("test4@gmail.com");
+        List<UserDTO> userDTOs = Arrays.asList(userDTO);
 
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("mock-entry-remove");
-        request.setUsers(userDtos);
+        request.setUsers(userDTOs);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -657,13 +657,13 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        assertThat(computeRepository
-                .findByUsers_EmailAndInstanceName(userDto.getEmail(),
+        assertTrue(computeRepository
+                .findByUsers_EmailAndInstanceName(userDTO.getEmail(),
                         request.getInstanceName())
                 .isEmpty());
 
         // Clean up
-        computeRepository.delete(compute);
-        userRepository.delete(user);
+        computeRepository.deleteByInstanceName(request.getInstanceName());
+        userRepository.deleteByEmail(userDTO.getEmail());
     }
 }
