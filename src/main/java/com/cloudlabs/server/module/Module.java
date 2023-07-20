@@ -1,11 +1,18 @@
 package com.cloudlabs.server.module;
 
+import com.cloudlabs.server.compute.Compute;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import java.util.HashSet;
+import java.util.Set;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
 
 @Entity
 @Table(name = "modules")
@@ -24,12 +31,24 @@ public class Module {
     @Column(name = "description", length = 1000, nullable = false)
     private String moduleDescription;
 
+    @OneToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinColumn(name = "module_id", referencedColumnName = "moduleId")
+    private Set<Compute> computes = new HashSet<>();
+    
     public Module() {}
 
     public Module(String moduleSubtitle, String moduleName, String moduleDescription) {
             this.moduleSubtitle = moduleSubtitle;
             this.moduleName = moduleName;
             this.moduleDescription = moduleDescription;
+        }
+
+    public Module(String moduleSubtitle, String moduleName, String moduleDescription, 
+                Set<Compute> computes) {
+            this.moduleSubtitle = moduleSubtitle;
+            this.moduleName = moduleName;
+            this.moduleDescription = moduleDescription;
+            this.computes = computes;
         }
 
     public Long getModuleId() {
@@ -62,5 +81,13 @@ public class Module {
 
     public void setModuleDescription(String moduleDescription) {
         this.moduleDescription = moduleDescription;
+    }
+
+    public Set<Compute> getComputes() {
+        return computes;
+    }
+
+    public void setComputes(Set<Compute> computes) {
+        this.computes = computes;
     }
 }

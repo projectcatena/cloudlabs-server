@@ -85,4 +85,16 @@ public class ModuleController {
 
         return response;
     }
+
+    @PostMapping("/add-computes")
+    public ModuleDTO addModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.addModuleComputeInstance(moduleDTO);
+        return response;
+    }
+
+    @PostMapping("/remove-computes")
+    public ModuleDTO removeModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.removeModuleComputeInstance(moduleDTO);
+        return response;
+    }
 }

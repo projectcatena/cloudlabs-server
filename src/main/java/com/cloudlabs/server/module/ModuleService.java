@@ -12,4 +12,6 @@ public interface ModuleService {
     ModuleDTO addModule(ModuleDTO moduleDTO);
     ModuleDTO deleteModule(Long moduleId) throws InterruptedException, ExecutionException, TimeoutException, IOException;
     ModuleDTO updateModule(Long moduleId, ModuleDTO moduleDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException;
+    ModuleDTO addModuleComputeInstance(ModuleDTO moduleDTO);
+    ModuleDTO removeModuleComputeInstance(ModuleDTO moduleDTO);
 }
