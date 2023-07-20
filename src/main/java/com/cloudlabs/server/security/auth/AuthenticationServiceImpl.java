@@ -1,5 +1,18 @@
 package com.cloudlabs.server.security.auth;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
@@ -9,17 +22,6 @@ import com.cloudlabs.server.security.auth.dto.RegisterDTO;
 import com.cloudlabs.server.security.jwt.JwtService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -54,6 +56,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     // Map additional claims, specifically username, fullname, and list of roles
     // for frontend
     HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("id", user.getId());
     extraClaims.put("username", user.getUserName());
     extraClaims.put("fullname", user.getFullname());
     extraClaims.put("roles", user.getRoles());
@@ -89,6 +92,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     userRepository.save(user);
 
     HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("id", user.getId());
     extraClaims.put("username", user.getUserName());
     extraClaims.put("fullname", user.getFullname());
     extraClaims.put("roles", user.getRoles());
