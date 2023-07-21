@@ -1,88 +1,56 @@
-/*
- * package com.cloudlabs.server.admin;
- * 
- * import com.cloudlabs.server.role.ERole;
- * import com.cloudlabs.server.user.User;
- * import com.cloudlabs.server.user.UserDto;
- * import com.cloudlabs.server.user.UserRepository;
- * import com.cloudlabs.server.user.UserService;
- * import java.io.IOException;
- * import java.util.List;
- * import org.springframework.http.MediaType;
- * import org.springframework.security.access.prepost.PreAuthorize;
- * import org.springframework.web.bind.annotation.CrossOrigin;
- * import org.springframework.web.bind.annotation.DeleteMapping;
- * import org.springframework.web.bind.annotation.GetMapping;
- * import org.springframework.web.bind.annotation.PutMapping;
- * import org.springframework.web.bind.annotation.RequestMapping;
- * import org.springframework.web.bind.annotation.RequestParam;
- * import org.springframework.web.bind.annotation.RestController;
- * 
- * @CrossOrigin(origins = {"${app.security.cors.origin}"})
- * 
- * @RequestMapping()
- * 
- * @RestController()
- * public class AdminController {
- * 
- * private UserService userService;
- * private UserRepository userRepository;
- * 
- * public AdminController(
- * UserService userService,
- * UserRepository userRepository) {
- * this.userService = userService;
- * this.userRepository = userRepository;
- * }
- * 
- * @GetMapping(path = "admin")
- * 
- * @PreAuthorize("hasAuthority('ADMIN')")
- * public String adminPage() {
- * return "admin";
- * }
- * 
- * @GetMapping(path = "admin/list")
- * 
- * @PreAuthorize("hasAuthority('ADMIN')") //remove user & tutor
- * public List<UserDto> userList() throws IOException {
- * List<UserDto> userList = userService.findAllUsers();
- * if (userList == null) {
- * return null;
- * }
- * return userList;
- * }
- * 
- * @PutMapping(path = "admin/add", consumes =
- * (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
- * 
- * @PreAuthorize("hasAuthority('ADMIN')")
- * public User addRole(
- * 
- * @RequestParam String email,
- * 
- * @RequestParam String role
- * ) throws IOException {
- * User user = userRepository.findByEmail(email);
- * ERole eRole = ERole.valueOf(role.toUpperCase());
- * userService.setNewRole(eRole, user); //check for duplicate role
- * return user;
- * }
- * 
- * @DeleteMapping(path = "admin/delete", consumes =
- * (MediaType.APPLICATION_FORM_URLENCODED_VALUE))
- * 
- * @PreAuthorize("hasAuthority('ADMIN')")
- * public User deleteRole(
- * 
- * @RequestParam String email,
- * 
- * @RequestParam String role
- * ) throws IOException {
- * User user = userRepository.findByEmail(email);
- * ERole eRole = ERole.valueOf(role.toUpperCase());
- * userService.deleteRole(eRole, user);
- * return user;
- * }
- * }
- */
+ package com.cloudlabs.server.admin;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.cloudlabs.server.user.dto.UserDTO;
+
+@CrossOrigin(origins = {"${app.security.cors.origin}"})
+@RestController()
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private AdminService adminService;
+
+
+    @GetMapping(path = "/list")
+    @PreAuthorize("hasRole('ADMIN')") //remove user & tutor
+    public List<UserDTO> listUsers() throws IOException {
+        List<UserDTO> userList = adminService.getAllUsers();
+        if (userList == null) {
+            return null;
+        }
+        return userList;
+    }
+
+    @PutMapping(path = "/add")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDTO addRole(@RequestBody UserDTO userDTO) throws IOException {
+        UserDTO result = adminService.setNewRole(userDTO);
+        if (result.equals(null)){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to add role");
+        }
+        return result;
+    }
+
+    @DeleteMapping(path = "/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDTO deleteRole(@RequestBody UserDTO userDTO) throws IOException {
+        UserDTO result = adminService.deleteRole(userDTO);
+        return result;
+    }
+}
+
