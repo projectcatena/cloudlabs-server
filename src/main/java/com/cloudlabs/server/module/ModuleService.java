@@ -22,6 +22,10 @@ public interface ModuleService {
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException;
 
+    ModuleDTO addModuleComputeInstance(ModuleDTO moduleDTO);
+
+    ModuleDTO removeModuleComputeInstance(ModuleDTO moduleDTO);
+
     ModuleDTO addUsers(ModuleDTO moduleDTO);
 
     ModuleDTO removeUsers(ModuleDTO moduleDTO);

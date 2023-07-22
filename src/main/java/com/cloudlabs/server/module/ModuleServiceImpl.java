@@ -1,5 +1,8 @@
 package com.cloudlabs.server.module;
 
+import com.cloudlabs.server.compute.Compute;
+import com.cloudlabs.server.compute.ComputeRepository;
+import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.role.dto.RoleDTO;
 import com.cloudlabs.server.user.User;
@@ -13,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import javax.management.InstanceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,6 +28,9 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Autowired
     private ModuleRepository repository;
+
+    @Autowired
+    private ComputeRepository computeRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -143,6 +150,37 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
+    public ModuleDTO addModuleComputeInstance(ModuleDTO moduleDTO) {
+        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+
+        if (module == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
+        }
+
+        List<ComputeDTO> addedInstances = new ArrayList<>();
+        Set<Compute> computes = new HashSet<>();
+
+        for (ComputeDTO computeDTO : moduleDTO.getComputes()) {
+            try {
+                Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName())
+                        .orElseThrow(() -> new InstanceNotFoundException(
+                                "Virtual Machine not found."));
+                computes.add(compute);
+                addedInstances.add(computeDTO);
+            } catch (InstanceNotFoundException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            }
+        }
+
+        module.getComputes().addAll(computes);
+        repository.save(module);
+
+        moduleDTO.setComputes(addedInstances);
+
+        return moduleDTO;
+    }
+
     public ModuleDTO addUsers(ModuleDTO moduleDTO) {
         Module module = repository.findByModuleId(moduleDTO.getModuleId());
 
@@ -170,6 +208,40 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
+    public ModuleDTO removeModuleComputeInstance(ModuleDTO moduleDTO) {
+        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+
+        if (module == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
+        }
+
+        Set<Compute> computes = module.getComputes();
+        List<ComputeDTO> removedInstances = new ArrayList<>();
+
+        for (ComputeDTO computeDTO : moduleDTO.getComputes()) {
+            try {
+                Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName())
+                        .orElseThrow(() -> new InstanceNotFoundException(
+                                "Virtual Machine not found."));
+                if (computes.contains(compute)) {
+                    computes.remove(compute);
+
+                    removedInstances.add(computeDTO);
+                }
+            } catch (InstanceNotFoundException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            }
+        }
+
+        module.setComputes(computes);
+        repository.save(module);
+
+        moduleDTO.setComputes(removedInstances);
+
+        return moduleDTO;
+    }
+
     public ModuleDTO removeUsers(ModuleDTO moduleDTO) {
 
         Module module = repository.findByModuleId(moduleDTO.getModuleId());

@@ -1,5 +1,6 @@
 package com.cloudlabs.server.module.dto;
 
+import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -13,6 +14,7 @@ public class ModuleDTO {
     private String moduleSubtitle;
     private String moduleName;
     private String moduleDescription;
+    private List<ComputeDTO> computes;
     private List<UserDTO> users;
 
     public ModuleDTO() {
@@ -48,6 +50,14 @@ public class ModuleDTO {
 
     public void setModuleDescription(String moduleDescription) {
         this.moduleDescription = moduleDescription;
+    }
+
+    public List<ComputeDTO> getComputes() {
+        return computes;
+    }
+
+    public void setComputes(List<ComputeDTO> computes) {
+        this.computes = computes;
     }
 
     public List<UserDTO> getUsers() {

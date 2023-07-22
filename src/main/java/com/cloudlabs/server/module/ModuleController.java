@@ -2,14 +2,11 @@ package com.cloudlabs.server.module;
 
 import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.user.dto.UserDTO;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -134,6 +131,18 @@ public class ModuleController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
+        return response;
+    }
+
+    @PostMapping("/add-computes")
+    public ModuleDTO addModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.addModuleComputeInstance(moduleDTO);
+        return response;
+    }
+
+    @PostMapping("/remove-computes")
+    public ModuleDTO removeModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.removeModuleComputeInstance(moduleDTO);
         return response;
     }
 }
