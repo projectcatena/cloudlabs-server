@@ -1,29 +1,27 @@
 package com.cloudlabs.server.module;
 
-import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.compute.Compute;
 import com.cloudlabs.server.compute.ComputeRepository;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
+import com.cloudlabs.server.module.dto.ModuleDTO;
+import com.cloudlabs.server.role.dto.RoleDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.dto.UserDTO;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import javax.management.InstanceNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ModuleServiceImpl implements ModuleService {
@@ -31,19 +29,22 @@ public class ModuleServiceImpl implements ModuleService {
     @Autowired
     private ModuleRepository repository;
 
-
     @Autowired
     private ComputeRepository computeRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public List<ModuleDTO> getAllModules() {
         List<Module> modules = repository.findAll();
 
-        modules.sort((m1, m2) -> m1.getModuleName().compareToIgnoreCase(m2.getModuleName()));
+        modules.sort(
+                (m1, m2) -> m1.getModuleName().compareToIgnoreCase(m2.getModuleName()));
 
         List<ModuleDTO> moduleDTOs = new ArrayList<ModuleDTO>();
 
-        for (Module module : modules){
+        for (Module module : modules) {
             ModuleDTO moduleDTO = new ModuleDTO();
             moduleDTO.setModuleId(module.getModuleId());
             moduleDTO.setModuleSubtitle(module.getModuleSubtitle());
@@ -59,7 +60,8 @@ public class ModuleServiceImpl implements ModuleService {
     public ModuleDTO getModuleById(Long moduleId) {
         Module module = repository.findByModuleId(moduleId);
         if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
         }
 
         // Map Module entity to ModuleDTO
@@ -80,7 +82,8 @@ public class ModuleServiceImpl implements ModuleService {
         String description = moduleDTO.getModuleDescription();
 
         if (subtitle.isBlank() || title.isBlank() || description.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Module details input");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid Module details input");
         }
 
         Module newModule = new Module(subtitle, title, description);
@@ -96,10 +99,13 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public ModuleDTO deleteModule(Long moduleId) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    public ModuleDTO deleteModule(Long moduleId)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
         Module module = repository.findByModuleId(moduleId);
         if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
         }
         repository.delete(module);
 
@@ -110,14 +116,17 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public ModuleDTO updateModule(Long moduleId, ModuleDTO moduleDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    public ModuleDTO updateModule(Long moduleId, ModuleDTO moduleDTO)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
         Module module = repository.findByModuleId(moduleId);
         String subtitle = moduleDTO.getModuleSubtitle();
         String title = moduleDTO.getModuleName();
         String description = moduleDTO.getModuleDescription();
 
         if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
         }
 
         if (!subtitle.isBlank()) {
@@ -145,7 +154,8 @@ public class ModuleServiceImpl implements ModuleService {
         Module module = repository.findByModuleId(moduleDTO.getModuleId());
 
         if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
         }
 
         List<ComputeDTO> addedInstances = new ArrayList<>();
@@ -154,8 +164,8 @@ public class ModuleServiceImpl implements ModuleService {
         for (ComputeDTO computeDTO : moduleDTO.getComputes()) {
             try {
                 Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName())
-                        .orElseThrow(
-                            () -> new InstanceNotFoundException("Virtual Machine not found."));
+                        .orElseThrow(() -> new InstanceNotFoundException(
+                                "Virtual Machine not found."));
                 computes.add(compute);
                 addedInstances.add(computeDTO);
             } catch (InstanceNotFoundException e) {
@@ -171,12 +181,39 @@ public class ModuleServiceImpl implements ModuleService {
         return moduleDTO;
     }
 
+    public ModuleDTO addUsers(ModuleDTO moduleDTO) {
+        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+
+        if (module == null) {
+            return null;
+        }
+
+        List<UserDTO> addedUsers = new ArrayList<>();
+        Set<User> users = new HashSet<>();
+
+        for (UserDTO userDTO : moduleDTO.getUsers()) {
+            User user = userRepository.findByEmail(userDTO.getEmail())
+                    .orElseThrow(
+                            () -> new UsernameNotFoundException("User not found!"));
+            users.add(user);
+            addedUsers.add(userDTO);
+        }
+
+        module.getUsers().addAll(users);
+        repository.save(module);
+
+        moduleDTO.setUsers(addedUsers);
+
+        return moduleDTO;
+    }
+
     @Override
     public ModuleDTO removeModuleComputeInstance(ModuleDTO moduleDTO) {
         Module module = repository.findByModuleId(moduleDTO.getModuleId());
 
         if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Module not found");
         }
 
         Set<Compute> computes = module.getComputes();
@@ -185,8 +222,8 @@ public class ModuleServiceImpl implements ModuleService {
         for (ComputeDTO computeDTO : moduleDTO.getComputes()) {
             try {
                 Compute compute = computeRepository.findByInstanceName(computeDTO.getInstanceName())
-                        .orElseThrow(
-                            () -> new InstanceNotFoundException("Virtual Machine not found."));
+                        .orElseThrow(() -> new InstanceNotFoundException(
+                                "Virtual Machine not found."));
                 if (computes.contains(compute)) {
                     computes.remove(compute);
 
@@ -203,5 +240,62 @@ public class ModuleServiceImpl implements ModuleService {
         moduleDTO.setComputes(removedInstances);
 
         return moduleDTO;
+    }
+
+    public ModuleDTO removeUsers(ModuleDTO moduleDTO) {
+
+        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+
+        if (module == null) {
+            return null;
+        }
+        // Get list of users from entity
+        Set<User> users = module.getUsers();
+
+        List<UserDTO> removedUsers = new ArrayList<>();
+
+        // Get a list of users to remove
+        for (UserDTO userDTO : moduleDTO.getUsers()) {
+            // Ensure valid user
+            User user = userRepository.findByEmail(userDTO.getEmail())
+                    .orElseThrow(
+                            () -> new UsernameNotFoundException("User not found!"));
+
+            // If is in list of assigned users, consider valid
+            if (users.contains(user)) {
+                users.remove(user);
+
+                // Add to list of users removed
+                removedUsers.add(userDTO);
+            }
+        }
+
+        // Flush changes to database
+        module.setUsers(users);
+        repository.save(module);
+
+        moduleDTO.setUsers(removedUsers);
+
+        return moduleDTO;
+    }
+
+    /*
+     * Useful for tutors to get a list of students assigned to a specific module
+     */
+    @Override
+    public List<UserDTO> listUsers(ModuleDTO moduleDTO) {
+        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+
+        List<UserDTO> userDTOs = module.getUsers()
+                .stream()
+                .map(user -> new UserDTO(user.getFullname(), user.getUserName(),
+                        user.getEmail(), null,
+                        user.getRoles()
+                                .stream()
+                                .map(role -> new RoleDTO(role.getName()))
+                                .collect(Collectors.toList())))
+                .collect(Collectors.toList());
+
+        return userDTOs;
     }
 }
