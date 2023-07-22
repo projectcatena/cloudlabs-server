@@ -36,6 +36,7 @@ import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -193,9 +194,20 @@ public class ComputeServiceImpl implements ComputeService {
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(publicIPAddressDTO);
 
-            // Successful Instance Creation, save to Database
+            // Get current user from security context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+
+            // Find user by email
+            User user = userRepository.findByEmail(email).get();
+
+            // Successful Instance Creation, save Compute and Current User to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
-                    publicIPAddressDTO.getIpv4Address());
+                    publicIPAddressDTO.getIpv4Address(),
+                    new HashSet<>(Arrays.asList(user)));
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -291,8 +303,8 @@ public class ComputeServiceImpl implements ComputeService {
                     .setAccessConfigResource(accessConfig)
                     .setInstance(instanceName)
                     .setNetworkInterface(
-                            networkInterfaceName) // value should be network interface
-                                                  // name (e.g. nic0)
+                            networkInterfaceName) // value should be network
+                                                  // interface name (e.g. nic0)
                     .setProject(project)
                     .setZone(zone)
                     .build();
