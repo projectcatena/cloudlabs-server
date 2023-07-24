@@ -81,15 +81,18 @@ public class ComputeController {
 	}
 
 	@PostMapping("/reset")
-	public ComputeDTO resetInstance(@RequestBody ComputeDTO resetRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-		
+	public ComputeDTO resetInstance(@RequestBody ComputeDTO resetRequest)
+			throws InterruptedException, ExecutionException, TimeoutException,
+			IOException {
+
 		ComputeDTO response = computeService.resetInstance(resetRequest.getInstanceName());
 
 		return response;
 	}
 
 	@PostMapping("/status")
-	public ComputeDTO getInstanceStatus(@RequestBody ComputeDTO getStatus) throws IOException {
+	public ComputeDTO getInstanceStatus(@RequestBody ComputeDTO getStatus)
+			throws IOException {
 
 		ComputeDTO response = computeService.getInstanceStatus(getStatus.getInstanceName());
 
@@ -97,7 +100,9 @@ public class ComputeController {
 	}
 
 	@PostMapping("/stop")
-	public ComputeDTO stopInstance(@RequestBody ComputeDTO stopRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+	public ComputeDTO stopInstance(@RequestBody ComputeDTO stopRequest)
+			throws InterruptedException, ExecutionException, TimeoutException,
+			IOException {
 
 		ComputeDTO response = computeService.stopInstance(stopRequest.getInstanceName());
 
@@ -105,11 +110,30 @@ public class ComputeController {
 	}
 
 	@PostMapping("/start")
-	public ComputeDTO startInstance(@RequestBody ComputeDTO startRequest) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+	public ComputeDTO startInstance(@RequestBody ComputeDTO startRequest)
+			throws InterruptedException, ExecutionException, TimeoutException,
+			IOException {
 
 		ComputeDTO response = computeService.startInstance(startRequest.getInstanceName());
 
 		return response;
 	}
 
+	@PostMapping("/add-users")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+	public ComputeDTO addComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
+
+		ComputeDTO response = computeService.addComputeInstanceUsers(computeDTO);
+
+		return response;
+	}
+
+	@PostMapping("/remove-users")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+	public ComputeDTO removeComputeInstanceUsers(@RequestBody ComputeDTO computeDTO) {
+
+		ComputeDTO response = computeService.removeComputeInstanceUsers(computeDTO);
+
+		return response;
+	}
 }

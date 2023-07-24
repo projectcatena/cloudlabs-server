@@ -4,6 +4,9 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.dto.UserDTO;
 import com.google.api.gax.longrunning.OperationFuture;
 import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AddAccessConfigInstanceRequest;
@@ -14,6 +17,7 @@ import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
 import com.google.cloud.compute.v1.DeleteAddressRequest;
 import com.google.cloud.compute.v1.DeleteInstanceRequest;
+import com.google.cloud.compute.v1.GetInstanceRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -30,16 +34,20 @@ import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
-import com.google.cloud.compute.v1.GetInstanceRequest;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -51,6 +59,9 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private ComputeRepository computeRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
@@ -183,9 +194,20 @@ public class ComputeServiceImpl implements ComputeService {
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(publicIPAddressDTO);
 
-            // Successful Instance Creation, save to Database
+            // Get current user from security context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+
+            // Find user by email
+            User user = userRepository.findByEmail(email).get();
+
+            // Successful Instance Creation, save Compute and Current User to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
-                    publicIPAddressDTO.getIpv4Address());
+                    publicIPAddressDTO.getIpv4Address(),
+                    new HashSet<>(Arrays.asList(user)));
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -281,8 +303,8 @@ public class ComputeServiceImpl implements ComputeService {
                     .setAccessConfigResource(accessConfig)
                     .setInstance(instanceName)
                     .setNetworkInterface(
-                            networkInterfaceName) // value should be network interface
-                                                  // name (e.g. nic0)
+                            networkInterfaceName) // value should be network
+                                                  // interface name (e.g. nic0)
                     .setProject(project)
                     .setZone(zone)
                     .build();
@@ -335,7 +357,15 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Override
     public List<ComputeDTO> listComputeInstances() {
-        List<Compute> computeInstances = computeRepository.findAll();
+
+        // Get email from Jwt token using context
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        List<Compute> computeInstances = computeRepository.findByUsers_Email(email);
 
         List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
 
@@ -360,7 +390,20 @@ public class ComputeServiceImpl implements ComputeService {
     @Override
     public ComputeDTO getComputeInstance(String instanceName) {
 
-        Compute compute = computeRepository.findByInstanceName(instanceName);
+        // Get email from Jwt token using context
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        // Ensure that only assigned users can see the instance
+        Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, instanceName)
+                .orElse(null);
+
+        if (compute == null) {
+            return null;
+        }
 
         AddressDTO addressDTO = new AddressDTO();
         addressDTO.setIpv4Address(compute.getIpv4Address());
@@ -377,17 +420,18 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public ComputeDTO resetInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    public ComputeDTO resetInstance(String instanceName)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
         try (InstancesClient instancesClient = InstancesClient.create()) {
 
             ResetInstanceRequest resetInstanceRequest = ResetInstanceRequest.newBuilder()
-            .setProject(project)
-            .setZone(zone)
-            .setInstance(instanceName)
-            .build();
+                    .setProject(project)
+                    .setZone(zone)
+                    .setInstance(instanceName)
+                    .build();
 
-            OperationFuture<Operation, Operation> operation = instancesClient.resetAsync(
-                resetInstanceRequest);
+            OperationFuture<Operation, Operation> operation = instancesClient.resetAsync(resetInstanceRequest);
             Operation response = operation.get(3, TimeUnit.MINUTES);
 
             if (response.getStatus() == Status.DONE) {
@@ -398,18 +442,17 @@ public class ComputeServiceImpl implements ComputeService {
             computeDTO.setInstanceName(instanceName);
             computeDTO.setStatus(response.getStatus().name());
             return computeDTO;
-
-        }   
+        }
     }
 
     @Override
     public ComputeDTO getInstanceStatus(String instanceName) throws IOException {
-        try(InstancesClient instancesClient = InstancesClient.create()) {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
             GetInstanceRequest request = GetInstanceRequest.newBuilder()
-            .setProject(project)
-            .setZone(zone)
-            .setInstance(instanceName)
-            .build();
+                    .setProject(project)
+                    .setZone(zone)
+                    .setInstance(instanceName)
+                    .build();
 
             Instance response = instancesClient.get(request);
 
@@ -420,17 +463,18 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public ComputeDTO stopInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        try(InstancesClient instancesClient = InstancesClient.create()) {
+    public ComputeDTO stopInstance(String instanceName)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
 
             StopInstanceRequest stopInstanceRequest = StopInstanceRequest.newBuilder()
-            .setProject(project)
-            .setZone(zone)
-            .setInstance(instanceName)
-            .build();
+                    .setProject(project)
+                    .setZone(zone)
+                    .setInstance(instanceName)
+                    .build();
 
-            OperationFuture<Operation, Operation> operation = instancesClient.stopAsync(
-                stopInstanceRequest);
+            OperationFuture<Operation, Operation> operation = instancesClient.stopAsync(stopInstanceRequest);
             Operation response = operation.get(3, TimeUnit.MINUTES);
 
             if (response.getStatus() == Status.DONE) {
@@ -445,17 +489,18 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public ComputeDTO startInstance(String instanceName) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        try(InstancesClient instancesClient = InstancesClient.create()) {
+    public ComputeDTO startInstance(String instanceName)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
 
             StartInstanceRequest startInstanceRequest = StartInstanceRequest.newBuilder()
-            .setProject(project)
-            .setZone(zone)
-            .setInstance(instanceName)
-            .build();
+                    .setProject(project)
+                    .setZone(zone)
+                    .setInstance(instanceName)
+                    .build();
 
-            OperationFuture<Operation, Operation> operation = instancesClient.startAsync(
-            startInstanceRequest);
+            OperationFuture<Operation, Operation> operation = instancesClient.startAsync(startInstanceRequest);
             Operation response = operation.get(3, TimeUnit.MINUTES);
 
             if (response.getStatus() == Status.DONE) {
@@ -467,5 +512,95 @@ public class ComputeServiceImpl implements ComputeService {
             computeDTO.setStatus(response.getStatus().name());
             return computeDTO;
         }
+    }
+
+    /*
+     * Allow tutor to assign users to a compute instance
+     *
+     * @param users
+     *
+     * @param computeInstance
+     */
+    @Override
+    public ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO) {
+        Optional<Compute> compute = computeRepository.findByInstanceName(computeDTO.getInstanceName());
+
+        if (compute.isEmpty()) {
+            return null;
+        }
+
+        List<UserDTO> addedUsers = new ArrayList<>();
+        Set<User> users = new HashSet<>();
+
+        for (UserDTO userDTO : computeDTO.getUsers()) {
+            User user = userRepository.findByEmail(userDTO.getEmail())
+                    .orElseThrow(
+                            () -> new UsernameNotFoundException("User not found!"));
+            users.add(user);
+            addedUsers.add(userDTO);
+        }
+
+        compute.get().getUsers().addAll(users);
+        computeRepository.save(compute.get());
+
+        computeDTO.setUsers(addedUsers);
+
+        return computeDTO;
+    }
+
+    /*
+     * Allow tutor to remove/unassign users from a compute instance entity
+     */
+    @Override
+    public ComputeDTO removeComputeInstanceUsers(ComputeDTO computeDTO) {
+
+        Optional<Compute> compute = computeRepository.findByInstanceName(computeDTO.getInstanceName());
+
+        if (compute.isEmpty()) {
+            return null;
+        }
+        // Get list of users from entity
+        Set<User> users = compute.get().getUsers();
+
+        /*
+         * users = users.stream()
+         * .filter(user -> userDTOs.stream()
+         * .map(UserDto::getEmail)
+         * .anyMatch(UserDTOEmail ->
+         * user.getEmail().equals(UserDTOEmail))) .collect(Collectors.toSet());
+         */
+
+        List<UserDTO> userDTOs = new ArrayList<>();
+
+        // Get a list of users to remove
+        for (UserDTO userDTO : computeDTO.getUsers()) {
+            // Ensure valid user
+            User user = userRepository.findByEmail(userDTO.getEmail())
+                    .orElseThrow(
+                            () -> new UsernameNotFoundException("User not found!"));
+
+            // If is in list of assigned users, consider valid
+            if (users.contains(user)) {
+                users.remove(user);
+
+                // Add to list of users removed
+                userDTOs.add(userDTO);
+            }
+        }
+
+        /*
+         * Boolean isSuccess = users.removeIf(
+         * user -> userDTOs.stream()
+         * .map(UserDto::getEmail)
+         * .anyMatch(UserDTOEmail -> user.getEmail() == UserDTOEmail));
+         */
+
+        // Flush changes to database
+        compute.get().setUsers(users);
+        computeRepository.save(compute.get());
+
+        computeDTO.setUsers(userDTOs);
+
+        return computeDTO;
     }
 }
