@@ -1,11 +1,14 @@
 package com.cloudlabs.server.module;
 
 import com.cloudlabs.server.module.dto.ModuleDTO;
-
+import com.cloudlabs.server.user.dto.UserDTO;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,31 +20,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-@CrossOrigin(origins = {"${app.security.cors.origin}"})
+@CrossOrigin(origins = { "${app.security.cors.origin}" })
 @RestController
 @RequestMapping("/Modules")
 public class ModuleController {
-    
+
     @Autowired
     ModuleService moduleService;
 
     @GetMapping
-    public List<ModuleDTO> getAllModules(){
-        
+    public List<ModuleDTO> getAllModules() {
+
         List<ModuleDTO> response = moduleService.getAllModules();
 
         return response;
     }
 
     @GetMapping("/{moduleId}")
-    public ModuleDTO getModuleById(@PathVariable String moduleId) throws IOException {
+    public ModuleDTO getModuleById(@PathVariable String moduleId)
+            throws IOException {
         Long moduleIdAsLong = Long.valueOf(moduleId);
         ModuleDTO response = moduleService.getModuleById(moduleIdAsLong);
 
@@ -49,20 +46,26 @@ public class ModuleController {
     }
 
     @PostMapping("/create")
-    public ModuleDTO addModule(@RequestBody ModuleDTO moduleDTO) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public ModuleDTO addModule(@RequestBody ModuleDTO moduleDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
 
         ModuleDTO response = moduleService.addModule(moduleDTO);
 
         if (response == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-		}
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
 
         return response;
     }
 
     @DeleteMapping("/delete/{moduleId}")
-    public ModuleDTO deleteModule(@PathVariable String moduleId) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public ModuleDTO deleteModule(@PathVariable String moduleId)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
+
         Long moduleIdAsLong = Long.valueOf(moduleId);
         ModuleDTO response = moduleService.deleteModule(moduleIdAsLong);
 
@@ -70,15 +73,76 @@ public class ModuleController {
     }
 
     @PutMapping("/update/{moduleId}")
-    public ModuleDTO updateModule(@PathVariable String moduleId, @RequestBody ModuleDTO moduleDTO) throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public ModuleDTO updateModule(@PathVariable String moduleId,
+            @RequestBody ModuleDTO moduleDTO)
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
+
         Long moduleIdAsLong = Long.valueOf(moduleId);
         ModuleDTO response = moduleService.updateModule(moduleIdAsLong, moduleDTO);
 
         if (response == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-		}
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
 
+        return response;
+    }
+
+    @PostMapping("/add-users")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public ModuleDTO addUsers(@RequestBody ModuleDTO moduleDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        ModuleDTO response = moduleService.addUsers(moduleDTO);
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        return response;
+    }
+
+    @PostMapping("/remove-users")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public ModuleDTO removeUsers(@RequestBody ModuleDTO moduleDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        ModuleDTO response = moduleService.removeUsers(moduleDTO);
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        return response;
+    }
+
+    @PostMapping("/list-users")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public List<UserDTO> listUsers(@RequestBody ModuleDTO moduleDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        List<UserDTO> response = moduleService.listUsers(moduleDTO);
+
+        if (response == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        return response;
+    }
+
+    @PostMapping("/add-computes")
+    public ModuleDTO addModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.addModuleComputeInstance(moduleDTO);
+        return response;
+    }
+
+    @PostMapping("/remove-computes")
+    public ModuleDTO removeModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
+        ModuleDTO response = moduleService.removeModuleComputeInstance(moduleDTO);
         return response;
     }
 }

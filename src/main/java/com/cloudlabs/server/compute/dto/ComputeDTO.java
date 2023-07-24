@@ -1,9 +1,12 @@
 package com.cloudlabs.server.compute.dto;
 
+import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.util.List;
 
-@JsonInclude(Include.NON_DEFAULT) // Ignore null fields, and default values (like 0 for long type)
+@JsonInclude(Include.NON_DEFAULT)
+// Ignore null fields, and default values (like 0 for long type)
 public class ComputeDTO {
     private SourceImageDTO sourceImage;
     private MachineTypeDTO machineType;
@@ -13,9 +16,13 @@ public class ComputeDTO {
     private String startupScript;
     private AddressDTO address;
     private String status;
+
     private String snapshotName;
 
-    public ComputeDTO() {}
+    private List<UserDTO> users;
+
+    public ComputeDTO() {
+    }
 
     public SourceImageDTO getSourceImage() {
         return this.sourceImage;
@@ -89,4 +96,11 @@ public class ComputeDTO {
         this.snapshotName = snapshotName;
     }
 
+    public List<UserDTO> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<UserDTO> users) {
+        this.users = users;
+    }
 }
