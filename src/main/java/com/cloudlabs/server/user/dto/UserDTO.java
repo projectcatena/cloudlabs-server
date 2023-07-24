@@ -75,4 +75,5 @@ public class UserDTO {
     public void setNewRole(String newRole) {
         this.newRole = RoleType.valueOf(newRole.toUpperCase());
     }
+    
 }
