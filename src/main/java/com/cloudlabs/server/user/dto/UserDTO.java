@@ -53,5 +53,5 @@ public class UserDTO {
     public void setNewPassword(String new_password) {
         this.newPassword = new_password;
     }
-
+    
 }
