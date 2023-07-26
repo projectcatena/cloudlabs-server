@@ -11,4 +11,6 @@ public interface SubnetService {
     SubnetDTO createSubnet(SubnetDTO subnetDTO);
     SubnetDTO deleteSubnet(String subnetName) throws InterruptedException, ExecutionException, TimeoutException,
     IOException;
+    List<SubnetDTO> listSubnet() throws IOException;
+    SubnetDTO getSubnet(String subnetName) throws IOException;
 }

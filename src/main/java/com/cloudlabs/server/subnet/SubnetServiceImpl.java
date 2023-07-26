@@ -6,6 +6,7 @@ import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.Operation.Status;
 import com.google.cloud.compute.v1.DeleteSubnetworkRequest;
 import com.google.cloud.compute.v1.InsertSubnetworkRequest;
+import com.google.cloud.compute.v1.ListSubnetworksRequest;
 import com.google.cloud.compute.v1.Subnetwork;
 import com.google.cloud.compute.v1.SubnetworksClient;
 import com.google.cloud.compute.v1.SubnetworksSettings;
@@ -106,6 +107,37 @@ public class SubnetServiceImpl implements SubnetService {
 
                 return subnetDTO;
         }
+    }
+
+    @Override
+    public List<SubnetDTO> listSubnet() throws IOException {
+        try (SubnetworksClient subnetworksClient = SubnetworksClient.create()) {
+
+            List<Subnet> subnetworks = subnetRepository.findAll();
+
+            List<SubnetDTO> subnetDTOs = new ArrayList<SubnetDTO>();
+
+            for (Subnet subnet : subnetworks) {
+                SubnetDTO subnetDTO = new SubnetDTO();
+                subnetDTO.setSubnetName(subnet.getSubnetName());
+                subnetDTO.setIpv4Range(subnet.getIpv4Range());
+                subnetDTOs.add(subnetDTO);
+            }
+
+            return subnetDTOs;
+
+        }
+    }
+
+    @Override
+    public SubnetDTO getSubnet(String subnetName) {
+        Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+
+        SubnetDTO subnetDTO = new SubnetDTO();
+        subnetDTO.setSubnetName(subnet.getSubnetName());
+        subnetDTO.setIpv4Range(subnet.getIpv4Range());
+
+        return subnetDTO;
     }
 }
 

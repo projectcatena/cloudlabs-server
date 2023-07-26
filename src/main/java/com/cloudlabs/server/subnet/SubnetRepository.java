@@ -10,5 +10,7 @@ public interface SubnetRepository extends JpaRepository<Subnet, Long> {
 
     @Transactional
     void deleteBySubnetName(String subnetName);
+
+    Subnet findBySubnetName(String subnetName);
     
 }

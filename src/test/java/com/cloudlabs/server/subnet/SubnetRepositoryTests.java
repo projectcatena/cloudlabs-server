@@ -23,4 +23,10 @@ public class SubnetRepositoryTests {
     void deleteBySubnetName() {
         subnetRepository.deleteBySubnetName("test-subnet");
     }
+
+    @Test
+    void findSubnet_whenSubnetNameGiven() {
+        Subnet subnet = subnetRepository.findBySubnetName("test-subnet");
+        assertNotNull(subnet);
+    }
 }

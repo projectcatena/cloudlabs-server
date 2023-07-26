@@ -24,9 +24,9 @@ public class SubnetController {
     @Autowired
     SubnetService subnetService;
 
-    @PostMapping("create")
+    @PostMapping("/create")
     @PreAuthorize("hasAnyRole('TUTOR', 'ADMIN')")
-    public SubnetDTO create(@RequestBody SubnetDTO subnetDTO)
+    public SubnetDTO createSubnet(@RequestBody SubnetDTO subnetDTO)
             throws IOException, InterruptedException, ExecutionException,
             TimeoutException {
                 SubnetDTO response = subnetService.createSubnet(subnetDTO);
@@ -38,9 +38,9 @@ public class SubnetController {
                 return response;
             }
 
-    @PostMapping("delete")
+    @PostMapping("/delete")
     @PreAuthorize("hasAnyRole('TUTOR', 'ADMIN')")
-    public SubnetDTO delete(@RequestBody SubnetDTO subnetDTO)
+    public SubnetDTO deleteSubnet(@RequestBody SubnetDTO subnetDTO)
             throws IOException, InterruptedException, ExecutionException,
             TimeoutException {
                 SubnetDTO response = subnetService.deleteSubnet(subnetDTO.getSubnetName());
@@ -51,4 +51,18 @@ public class SubnetController {
 
                 return response;
             }
+
+    @GetMapping("/list")
+    public List<SubnetDTO> listSubnet() throws IOException {
+        List<SubnetDTO> response = subnetService.listSubnet();
+
+        return response;
+    }
+
+    @GetMapping("/subnet")
+    public SubnetDTO getSubnet(@RequestParam String subnetName) throws IOException {
+        SubnetDTO response = subnetService.getSubnet(subnetName);
+
+        return response;
+    }
 }

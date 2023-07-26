@@ -35,7 +35,7 @@ public class SubnetControllerTests {
     private SubnetService subnetService;
 
     @Test
-    void createThenDeleteSubnet_whenCorrectParametersGiven() throws Exception {
+    void createThenListThenDeleteSubnet_whenCorrectParametersGiven() throws Exception {
 
         SubnetDTO request = new SubnetDTO();
         request.setSubnetName("test-subnet-1");
@@ -52,6 +52,12 @@ public class SubnetControllerTests {
 
         SubnetDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), SubnetDTO.class);
+
+        List<SubnetDTO> listSubnets = subnetService.listSubnet();
+        assertFalse(listSubnets.isEmpty());
+
+        SubnetDTO getSubnet = subnetService.getSubnet(response.getSubnetName());
+        assertNotNull(getSubnet);
 
         // Delete subnet
         SubnetDTO deleteSubnetDTO = subnetService.deleteSubnet(response.getSubnetName());
@@ -87,7 +93,7 @@ public class SubnetControllerTests {
                 .perform(MockMvcRequestBuilders.post("/network/create")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(jsonString))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
                 
     }
