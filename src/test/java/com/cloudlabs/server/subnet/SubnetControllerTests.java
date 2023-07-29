@@ -1,21 +1,29 @@
 package com.cloudlabs.server.subnet;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
+import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.subnet.dto.SubnetDTO;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -23,6 +31,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@TestInstance(Lifecycle.PER_CLASS)
 @WithMockUser(username = "tutor", roles = { "TUTOR" })
 public class SubnetControllerTests {
 
@@ -34,7 +43,27 @@ public class SubnetControllerTests {
     @Autowired
     private SubnetService subnetService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @BeforeAll
+    void setup() {
+        User user = new User("SubnetTest", "subnet-test", "subnet-test@gmail.com",
+                "Pa$$w0rd", Arrays.asList(new Role(RoleType.TUTOR)));
+        userRepository.save(user);
+    }
+
+    @AfterAll
+    void teardown() throws Exception {
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
+    }
+
     @Test
+    @WithUserDetails(value = "subnet-test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createThenListThenDeleteSubnet_whenCorrectParametersGiven() throws Exception {
 
         SubnetDTO request = new SubnetDTO();
@@ -45,8 +74,8 @@ public class SubnetControllerTests {
 
         MvcResult result = mockMvc
                 .perform(MockMvcRequestBuilders.post("/network/create")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonString))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -76,11 +105,10 @@ public class SubnetControllerTests {
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/network/create")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonString))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isForbidden())
                 .andReturn();
-
     }
 
     @Test
@@ -91,11 +119,10 @@ public class SubnetControllerTests {
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/network/create")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonString))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
-                
     }
 
     @Test
@@ -108,8 +135,8 @@ public class SubnetControllerTests {
 
         MvcResult result = mockMvc
                 .perform(MockMvcRequestBuilders.post("/network/create")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonString))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
@@ -124,10 +151,9 @@ public class SubnetControllerTests {
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/network/delete")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonString2))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString2))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();    
+                .andReturn();
     }
-    
 }
