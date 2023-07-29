@@ -71,18 +71,21 @@ public class ComputeControllerTests {
     @AfterAll
     void teardown() throws Exception {
         // Will find all compute instances in DB and delete one by one
-        List<Compute> computes = computeRepository.findAll();
-        for (Compute compute : computes) {
-
-            // Delete instance and release its public IP Address after test
-            ComputeDTO deleteComputeDTO = computeService.deleteInstance(compute.getInstanceName());
-
-            // Release IP
-            computeService.releaseStaticExternalIPAddress(
-                    String.format("%s-public-ip", compute.getInstanceName()));
-
-            assertNotNull(deleteComputeDTO.getStatus());
-        }
+        // List<Compute> computes = computeRepository.findAll();
+        // for (Compute compute : computes) {
+        //
+        // // Delete instance and release its public IP Address after test
+        // ComputeDTO deleteComputeDTO =
+        // computeService.deleteInstance(compute.getInstanceName());
+        //
+        // // Release IP
+        // computeService.releaseStaticExternalIPAddress(
+        // String.format("%s-public-ip", compute.getInstanceName()));
+        //
+        // assertNotNull(deleteComputeDTO.getStatus());
+        // }
+        //
+        // Don't delete all here, will have race condition
 
         userRepository.deleteAll();
         roleRepository.deleteAll();
@@ -114,16 +117,20 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
-    }
 
-    @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
-    void listComputeInstances_whenAuthenticatedAndAfterCreation() throws Exception {
+        // List
         this.mockMvc
                 .perform(MockMvcRequestBuilders.get("/compute/list")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isNotEmpty());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -157,6 +164,13 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.instanceName").isNotEmpty());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -179,6 +193,13 @@ public class ComputeControllerTests {
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
@@ -306,15 +327,39 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void resetInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("test-public-image");
+        request.setInstanceName("test-reset-instance");
         request.setStartupScript("");
 
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("debian-11");
+        sourceImageDTO.setProject("debian-cloud");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-micro");
+        request.setMachineType(machineTypeDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
+
+        // Create an instance
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
 
         // Reset instance
         this.mockMvc
@@ -323,6 +368,13 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     // @Test
@@ -397,6 +449,13 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
