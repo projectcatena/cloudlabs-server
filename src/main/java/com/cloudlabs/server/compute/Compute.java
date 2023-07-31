@@ -37,7 +37,7 @@ public class Compute {
     private Set<User> users = new HashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "subnetName", nullable = false)
+    @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
     private Subnet subnet;
 
     public Compute() {

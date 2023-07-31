@@ -155,8 +155,11 @@ public class ComputeServiceImpl implements ComputeService {
             // Use the network interface provided in the networkName argument.
             NetworkInterface networkInterface = NetworkInterface.newBuilder()
                     .setName(networkName)
-                    .setNetwork(vpc) // VPC name
-                    .setSubnetwork(subnetName) // Subnet resource name
+                    .setNetwork(String.format("projects/%s/global/networks/%s",
+                            project, vpc)) // VPC name
+                    .setSubnetwork(String.format(
+                            "projects/%s/regions/%s/subnetworks/%s", project, region,
+                            subnetName)) // Subnet resource name
                     // .addAccessConfigs(addPublicIpAddressConfig)
                     .build();
 
@@ -221,7 +224,7 @@ public class ComputeServiceImpl implements ComputeService {
             User user = userRepository.findByEmail(email).get();
 
             // Find subnet by subnet name
-            Subnet subnet = subnetRepository.findBySubnetName(addressDTO.getSubnetName());
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
 
             // Successful Instance Creation, save Compute and Current User to
             // Database

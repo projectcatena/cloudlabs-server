@@ -395,7 +395,7 @@ public class ModuleControllerTests {
 
         Compute compute = new Compute();
         compute.setInstanceName("instance-test-linkmod");
-        compute.setIpv4Address("10.10.10.1");
+        compute.setPrivateIPv4Address("10.10.10.1");
         compute.setMachineType("e2-medium");
         computeRepository.save(compute);
 
@@ -427,7 +427,7 @@ public class ModuleControllerTests {
 
         Compute compute = new Compute();
         compute.setInstanceName("instance-test-linkmod");
-        compute.setIpv4Address("10.10.10.1");
+        compute.setPrivateIPv4Address("10.10.10.1");
         compute.setMachineType("e2-medium");
         computeRepository.save(compute);
 
@@ -459,7 +459,7 @@ public class ModuleControllerTests {
 
         Compute compute = new Compute();
         compute.setInstanceName("instance-test-removelinkmod");
-        compute.setIpv4Address("10.10.10.2");
+        compute.setPrivateIPv4Address("10.10.10.2");
         compute.setMachineType("e2-medium");
         computeRepository.save(compute);
 
@@ -494,7 +494,7 @@ public class ModuleControllerTests {
 
         Compute compute = new Compute();
         compute.setInstanceName("instance-test-failremovelinkmod");
-        compute.setIpv4Address("10.10.10.2");
+        compute.setPrivateIPv4Address("10.10.10.2");
         compute.setMachineType("e2-medium");
         computeRepository.save(compute);
 
