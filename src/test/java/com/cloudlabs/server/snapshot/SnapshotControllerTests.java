@@ -2,6 +2,9 @@ package com.cloudlabs.server.snapshot;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -9,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -19,7 +24,11 @@ import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -38,6 +47,9 @@ public class SnapshotControllerTests {
 
     @Autowired
     private ComputeService computeService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     ComputeDTO createInstance(String instanceName) throws Exception {
         ComputeDTO request = new ComputeDTO();
@@ -67,8 +79,15 @@ public class SnapshotControllerTests {
         return response;
     }
 
+    @BeforeAll
+    void setup() {
+        User user = new User("Bobby", "tutor", "test@gmail.com", "Pa$$w0rd",
+                Arrays.asList(new Role(RoleType.TUTOR)));
+        userRepository.save(user);
+    }
     
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createSnapshot() throws Exception {
         ComputeDTO response = createInstance("test-instance-for-create-snapshot-success");
 
@@ -92,6 +111,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteSnapshot() throws Exception {
         // create the instance
         ComputeDTO response = createInstance("test-instance-for-delete-snapshot-success");
@@ -120,6 +140,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void listSnapshots() throws Exception {
         // create the instance
         ComputeDTO response = createInstance("test-instance-for-list-snapshot");
@@ -148,6 +169,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotExists() throws Exception {
         // create the instance
         ComputeDTO response = createInstance("test-instance-for-revert-snapshot-success");
@@ -178,9 +200,10 @@ public class SnapshotControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotDoesNotExist() throws Exception {
         // create the instance
-        ComputeDTO response = createInstance("test-instance-for-revert-snapshot");
+        ComputeDTO response = createInstance("test-instance-for-revert-snapshot-failure");
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-3-failure",
         "", response.getInstanceName());

@@ -235,6 +235,9 @@ public class SnapshotServiceImpl implements SnapshotService {
         throws IOException, InterruptedException, ExecutionException, TimeoutException {
             // Get computeDTO
             ComputeDTO computeDTO = computeService.getComputeInstance(instanceName);
+            if (computeDTO.equals(null)){
+                return null;
+            }
             // then release IP address
             computeService.releaseStaticExternalIPAddress(
 				String.format("%s-public-ip", computeDTO.getInstanceName()));
