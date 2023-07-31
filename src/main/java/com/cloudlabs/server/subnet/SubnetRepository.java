@@ -1,6 +1,5 @@
 package com.cloudlabs.server.subnet;
 
-import java.util.List;
 import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

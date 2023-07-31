@@ -1,6 +1,5 @@
 package com.cloudlabs.server.compute.dto;
 
-import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -18,7 +17,6 @@ public class ComputeDTO {
     private AddressDTO address;
     private String status;
     private List<UserDTO> users;
-    private SubnetDTO subnet;
 
     public ComputeDTO() {
     }
@@ -93,13 +91,5 @@ public class ComputeDTO {
 
     public void setUsers(List<UserDTO> users) {
         this.users = users;
-    }
-
-    public SubnetDTO getSubnet() {
-        return subnet;
-    }
-
-    public void setSubnet(SubnetDTO subnet) {
-        this.subnet = subnet;
     }
 }

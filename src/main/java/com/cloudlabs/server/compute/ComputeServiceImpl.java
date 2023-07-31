@@ -123,7 +123,7 @@ public class ComputeServiceImpl implements ComputeService {
             long diskSizeGb = computeInstanceMetadata.getDiskSizeGb();
             String networkName = computeInstanceMetadata.getNetworkName();
             String instanceName = computeInstanceMetadata.getInstanceName();
-            String subnetName = computeInstanceMetadata.getSubnet().getSubnetName();
+            String subnetName = computeInstanceMetadata.getAddress().getSubnetName();
             String startupScript = computeInstanceMetadata.getStartupScript();
 
             if (startupScript == null) {

@@ -5,12 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
+import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
@@ -59,36 +63,27 @@ public class ComputeControllerTests {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private SubnetRepository subnetRepository;
+
     // Mock auth services
 
     @BeforeAll
-    void setup() {
+    void setup() throws Exception {
         User user = new User("Bobby", "bobby123", "test@gmail.com", "Pa$$w0rd",
                 Arrays.asList(new Role(RoleType.TUTOR)));
         userRepository.save(user);
+
+        // Pre-configured on GCP
+        Subnet subnet = new Subnet("test-subnet-compute", "10.254.2.0/24");
+        subnetRepository.save(subnet);
     }
 
     @AfterAll
     void teardown() throws Exception {
-        // Will find all compute instances in DB and delete one by one
-        // List<Compute> computes = computeRepository.findAll();
-        // for (Compute compute : computes) {
-        //
-        // // Delete instance and release its public IP Address after test
-        // ComputeDTO deleteComputeDTO =
-        // computeService.deleteInstance(compute.getInstanceName());
-        //
-        // // Release IP
-        // computeService.releaseStaticExternalIPAddress(
-        // String.format("%s-public-ip", compute.getInstanceName()));
-        //
-        // assertNotNull(deleteComputeDTO.getStatus());
-        // }
-        //
-        // Don't delete all here, will have race condition
-
         userRepository.deleteAll();
         roleRepository.deleteAll();
+        subnetRepository.deleteBySubnetName("test-subnet-compute");
     }
 
     // Since get and list require an instance to be created first, the tests for
@@ -96,7 +91,6 @@ public class ComputeControllerTests {
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createGetListThenDeleteComputeEngine_whenPublicImage() throws Exception {
-
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-public-image");
         request.setStartupScript("");
@@ -109,6 +103,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -148,6 +146,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -189,6 +191,10 @@ public class ComputeControllerTests {
         machineTypeDTO.setName("e2-medium");
         request.setMachineType(machineTypeDTO);
 
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
 
         this.mockMvc
@@ -223,6 +229,10 @@ public class ComputeControllerTests {
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
 
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
 
         this.mockMvc
@@ -249,6 +259,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e10-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -311,6 +325,10 @@ public class ComputeControllerTests {
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
 
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
 
         // Create an instance
@@ -351,6 +369,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -424,6 +446,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -502,7 +528,9 @@ public class ComputeControllerTests {
     @Test
     void addComputeInstanceUsers_whenValidParametersGiven() throws Exception {
         // Create an entry in database will do, as this doesn't need GCP to test
-        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1");
+        Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
+        subnetRepository.save(subnet);
+        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1", null, subnet);
         computeRepository.save(compute);
 
         // Create new test user
@@ -538,6 +566,7 @@ public class ComputeControllerTests {
         // Clean up manually as teardown() will fail since no actual instance is
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
+        subnetRepository.deleteBySubnetName("test-subnet");
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 
@@ -554,7 +583,10 @@ public class ComputeControllerTests {
         users.add(user);
 
         // Create an entry in database will do, as this doesn't need GCP to test
-        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1", users);
+        Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
+        subnetRepository.save(subnet);
+        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1",
+                users, subnet);
         computeRepository.save(compute);
 
         assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
@@ -585,6 +617,7 @@ public class ComputeControllerTests {
         // Clean up manually as teardown() will fail since no actual instance is
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
+        subnetRepository.deleteBySubnetName("test-subnet");
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 }
