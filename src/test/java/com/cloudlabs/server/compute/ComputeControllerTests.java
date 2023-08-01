@@ -14,7 +14,6 @@ import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.subnet.SubnetRepository;
-import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
@@ -23,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,9 +69,16 @@ public class ComputeControllerTests {
     // Mock auth services
 
     @BeforeAll
-    void setup() throws Exception {
-        User user = new User("Bobby", "bobby123", "test@gmail.com", "Pa$$w0rd",
-                Arrays.asList(new Role(RoleType.TUTOR)));
+    @Transactional
+    public void setup() throws Exception {
+        Role role = roleRepository.findByName(RoleType.TUTOR);
+
+        if (role == null) {
+            role = new Role(RoleType.TUTOR);
+        }
+
+        User user = new User("Bobby", "bobby123", "bobby123@gmail.com", "Pa$$w0rd",
+                Arrays.asList(role));
         userRepository.save(user);
 
         // Pre-configured on GCP
@@ -81,15 +88,14 @@ public class ComputeControllerTests {
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
+        userRepository.deleteByEmail("bobby123@gmail.com");
         subnetRepository.deleteBySubnetName("test-subnet-compute");
     }
 
     // Since get and list require an instance to be created first, the tests for
     // get and list will all be in this specific test case
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createGetListThenDeleteComputeEngine_whenPublicImage() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-public-image");
@@ -132,7 +138,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getComputeInstance_whenAuthenticatedAndAfterCreation() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance");
@@ -176,7 +182,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createThenDeleteComputeEngine_whenCustomImage() throws Exception {
 
         ComputeDTO request = new ComputeDTO();
@@ -310,7 +316,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getInstanceStatus_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance-status");
@@ -355,7 +361,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void resetInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-reset-instance");
@@ -432,7 +438,7 @@ public class ComputeControllerTests {
     // }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void stopThenStartAnInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-stop-instance");
