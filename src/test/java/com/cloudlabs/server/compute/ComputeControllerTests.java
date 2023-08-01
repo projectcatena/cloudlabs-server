@@ -206,6 +206,42 @@ public class ComputeControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    void createLimitThenDeleteComputeEngine_whenPublicImage() throws Exception {
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("test-limit-runtime-public-image");
+        request.setStartupScript("");
+        request.setMaxRunDuration(Long.valueOf(120));
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("debian-11");
+        sourceImageDTO.setProject("debian-cloud");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-micro");
+        request.setMachineType(machineTypeDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.maxRunDuration").value(120));
+
+        // Cleanup only need instance name
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
     @WithMockUser(username = "user", roles = { "USER" })
     void failCreateComputeEngine_whenPublicImageAndNormalUserRole()
             throws Exception {
