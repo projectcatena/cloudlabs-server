@@ -22,7 +22,6 @@ import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
 import com.google.cloud.compute.v1.DeleteAddressRequest;
 import com.google.cloud.compute.v1.DeleteInstanceRequest;
 import com.google.cloud.compute.v1.GetInstanceRequest;
-import com.google.cloud.compute.v1.GetRegionOperationRequest;
 import com.google.cloud.compute.v1.GetZoneOperationRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
@@ -36,15 +35,11 @@ import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.Operation.Status;
-import com.google.cloud.compute.v1.RegionOperationsClient;
 import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
 import com.google.cloud.compute.v1.ZoneOperationsClient;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -54,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -125,6 +119,7 @@ public class ComputeServiceImpl implements ComputeService {
             String networkName = computeInstanceMetadata.getNetworkName();
             String instanceName = computeInstanceMetadata.getInstanceName();
             String startupScript = computeInstanceMetadata.getStartupScript();
+            Long maxRunDuration = computeInstanceMetadata.getMaxRunDuration();
 
             if (startupScript == null) {
                 startupScript = "";
@@ -228,8 +223,13 @@ public class ComputeServiceImpl implements ComputeService {
                     new HashSet<>(Arrays.asList(user)));
             computeRepository.save(compute);
 
-            // Then, set limit runtime
-            ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(computeInstanceMetadata);
+            // Minimum of 120 seconds otherwise instance fail to start
+            if (!(maxRunDuration == null || maxRunDuration < 120)) {
+                // Then, set limit runtime
+                ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(instanceName, maxRunDuration);
+                responseComputeDTO.setMaxRunDuration(
+                        limitRuntimeResponseDTO.getMaxRunDuration());
+            }
 
             return responseComputeDTO;
         } catch (Exception exception) {
@@ -584,14 +584,6 @@ public class ComputeServiceImpl implements ComputeService {
         // Get list of users from entity
         Set<User> users = compute.get().getUsers();
 
-        /*
-         * users = users.stream()
-         * .filter(user -> userDTOs.stream()
-         * .map(UserDto::getEmail)
-         * .anyMatch(UserDTOEmail ->
-         * user.getEmail().equals(UserDTOEmail))) .collect(Collectors.toSet());
-         */
-
         List<UserDTO> userDTOs = new ArrayList<>();
 
         // Get a list of users to remove
@@ -610,13 +602,6 @@ public class ComputeServiceImpl implements ComputeService {
             }
         }
 
-        /*
-         * Boolean isSuccess = users.removeIf(
-         * user -> userDTOs.stream()
-         * .map(UserDto::getEmail)
-         * .anyMatch(UserDTOEmail -> user.getEmail() == UserDTOEmail));
-         */
-
         // Flush changes to database
         compute.get().setUsers(users);
         computeRepository.save(compute.get());
@@ -627,7 +612,8 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public ComputeDTO limitComputeRuntime(ComputeDTO computeDTO)
+    public ComputeDTO limitComputeRuntime(String instanceName,
+            Long maxRunDuration)
             throws IOException, InterruptedException, ExecutionException,
             TimeoutException {
 
@@ -636,32 +622,28 @@ public class ComputeServiceImpl implements ComputeService {
         AccessToken accessToken = credentials.refreshAccessToken();
 
         // Stop VM
-        stopInstance(computeDTO.getInstanceName());
+        stopInstance(instanceName);
 
         // Update Scheduling
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(String.format(
                         "https://compute.googleapis.com/compute/beta/projects/%s/zones/%s/instances/%s/setScheduling",
-                        project, zone, computeDTO.getInstanceName())))
+                        project, zone, instanceName)))
                 .POST(HttpRequest.BodyPublishers.ofString(String.format(
                         "{\"maxRunDuration\":{\"seconds\":\"%s\"},\"instanceTerminationAction\":\"STOP\"}",
-                        "3600"))) // unit is in seconds
+                        maxRunDuration))) // unit is in seconds
                 .header("Authorization", "Bearer " + accessToken.getTokenValue())
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         JsonNode operationJson = objectMapper.readTree(response.body());
 
-        // Operation operation = objectMapper.readValue(response.body(),
-        // Operation.class); System.out.println(operation.getId());
-
-        // Afer set scheduling, start instance
-        // Check resource is done updating
+        // Check resource is done updating by polling every 10 seconds
         try (ZoneOperationsClient zoneOperationsClient = ZoneOperationsClient.create()) {
-            Boolean isReady = false;
 
-            while (!isReady) {
+            while (true) {
+                // Compute instances are zone-based
                 GetZoneOperationRequest operationRequest = GetZoneOperationRequest.newBuilder()
                         .setOperation(
                                 operationJson.get("name").asText()) // name of operation
@@ -673,12 +655,19 @@ public class ComputeServiceImpl implements ComputeService {
 
                 if (operationResponse.getStatus().equals(Operation.Status.DONE)) {
                     System.out.println(operationResponse.getStatus());
-                    isReady = true;
+                    break;
                 }
+
+                Thread.sleep(10000);
             }
         }
 
-        startInstance(computeDTO.getInstanceName());
+        // Afer set scheduling, start instance
+        startInstance(instanceName);
+
+        ComputeDTO computeDTO = new ComputeDTO();
+        computeDTO.setInstanceName(instanceName);
+        computeDTO.setMaxRunDuration(maxRunDuration);
 
         return computeDTO;
     }
