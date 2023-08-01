@@ -235,7 +235,7 @@ public class SnapshotServiceImpl implements SnapshotService {
         throws IOException, InterruptedException, ExecutionException, TimeoutException {
             // Get computeDTO
             ComputeDTO computeDTO = computeService.getComputeInstance(instanceName);
-            if (computeDTO.equals(null)){
+            if (computeDTO == null){
                 return null;
             }
             // then release IP address

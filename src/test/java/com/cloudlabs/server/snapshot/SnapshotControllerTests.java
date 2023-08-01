@@ -1,9 +1,8 @@
 package com.cloudlabs.server.snapshot;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.Arrays;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -20,7 +19,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
@@ -41,12 +39,6 @@ public class SnapshotControllerTests {
     protected MockMvc mockMvc;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-
-    @Autowired
-    private SnapshotService snapshotService;
-
-    @Autowired
-    private ComputeService computeService;
 
     @Autowired
     private UserRepository userRepository;
@@ -85,6 +77,12 @@ public class SnapshotControllerTests {
                 Arrays.asList(new Role(RoleType.TUTOR)));
         userRepository.save(user);
     }
+
+    @AfterEach
+    void deleteUser() {
+        User user = userRepository.findByEmail("test@gmail.com").get();
+        userRepository.delete(user);
+    }
     
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
@@ -102,12 +100,16 @@ public class SnapshotControllerTests {
             .andExpect(MockMvcResultMatchers.status().isOk());
         
          // Delete instance and release its public IP Address after test
-        computeService.releaseStaticExternalIPAddress(
-                response.getAddress().getName());
-        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
-        assertNotNull(deleteComputeDTO.getStatus());
+        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+
         //Delete snapshot after testing
-        snapshotService.deleteSnapshot(saveSnapshotDTO.getSnapshotName());
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonString))
+        .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -132,11 +134,11 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-        // Delete instance and release its public IP Address after test
-        computeService.releaseStaticExternalIPAddress(
-                response.getAddress().getName());
-        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
-        assertNotNull(deleteComputeDTO.getStatus());
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -159,13 +161,17 @@ public class SnapshotControllerTests {
         this.mockMvc.perform(MockMvcRequestBuilders.get("/snapshot/list"))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-        // Delete instance and release its public IP Address after test
-        computeService.releaseStaticExternalIPAddress(
-                response.getAddress().getName());
-        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
-        assertNotNull(deleteComputeDTO.getStatus());
-        // delete snapshot
-        snapshotService.deleteSnapshot(saveSnapshotDTO.getSnapshotName());
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+
+        //Delete snapshot after testing
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonString))
+        .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -190,13 +196,17 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-        // Delete instance and release its public IP Address after test
-        computeService.releaseStaticExternalIPAddress(
-                response.getAddress().getName());
-        ComputeDTO deleteComputeDTO = computeService.deleteInstance(response.getInstanceName());
-        assertNotNull(deleteComputeDTO.getStatus());
-        // delete snapshot
-        snapshotService.deleteSnapshot(saveSnapshotDTO.getSnapshotName());
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+
+        //Delete snapshot after testing
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonString))
+        .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -215,7 +225,13 @@ public class SnapshotControllerTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
-        computeService.releaseStaticExternalIPAddress(
-                response.getAddress().getName());
+        
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+
+        
     }
 }

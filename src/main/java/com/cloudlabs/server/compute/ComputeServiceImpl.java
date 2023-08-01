@@ -352,10 +352,21 @@ public class ComputeServiceImpl implements ComputeService {
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(publicIPAddressDTO);
 
+            // Get current user from security context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+
+            // Find user by email
+            User user = userRepository.findByEmail(email).get();
+
             // Successful Instance Creation, save to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
                     publicIPAddressDTO.getIpv4Address(),
-                    diskSizeGb, sourceImageDTO.getName());
+                    diskSizeGb, sourceImageDTO.getName(),
+                    new HashSet<>(Arrays.asList(user)));
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -547,7 +558,8 @@ public class ComputeServiceImpl implements ComputeService {
                 .getAuthentication();
 
         String email = authenticationToken.getName();
-        System.out.print(email);
+        System.out.println(email);
+        System.out.println(instanceName);
 
         // Ensure that only assigned users can see the instance
         Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, instanceName)
