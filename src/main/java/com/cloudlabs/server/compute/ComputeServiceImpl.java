@@ -7,7 +7,11 @@ import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.longrunning.OperationFuture;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AddAccessConfigInstanceRequest;
 import com.google.cloud.compute.v1.Address;
@@ -18,6 +22,8 @@ import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
 import com.google.cloud.compute.v1.DeleteAddressRequest;
 import com.google.cloud.compute.v1.DeleteInstanceRequest;
 import com.google.cloud.compute.v1.GetInstanceRequest;
+import com.google.cloud.compute.v1.GetRegionOperationRequest;
+import com.google.cloud.compute.v1.GetZoneOperationRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -30,15 +36,25 @@ import com.google.cloud.compute.v1.Metadata;
 import com.google.cloud.compute.v1.NetworkInterface;
 import com.google.cloud.compute.v1.Operation;
 import com.google.cloud.compute.v1.Operation.Status;
+import com.google.cloud.compute.v1.RegionOperationsClient;
 import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
+import com.google.cloud.compute.v1.ZoneOperationsClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -62,6 +78,8 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private UserRepository userRepository;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
@@ -210,8 +228,12 @@ public class ComputeServiceImpl implements ComputeService {
                     new HashSet<>(Arrays.asList(user)));
             computeRepository.save(compute);
 
+            // Then, set limit runtime
+            ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(computeInstanceMetadata);
+
             return responseComputeDTO;
         } catch (Exception exception) {
+            exception.printStackTrace();
             return null;
         }
     }
@@ -600,6 +622,63 @@ public class ComputeServiceImpl implements ComputeService {
         computeRepository.save(compute.get());
 
         computeDTO.setUsers(userDTOs);
+
+        return computeDTO;
+    }
+
+    @Override
+    public ComputeDTO limitComputeRuntime(ComputeDTO computeDTO)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        // Get access token from ADC
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        AccessToken accessToken = credentials.refreshAccessToken();
+
+        // Stop VM
+        stopInstance(computeDTO.getInstanceName());
+
+        // Update Scheduling
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(String.format(
+                        "https://compute.googleapis.com/compute/beta/projects/%s/zones/%s/instances/%s/setScheduling",
+                        project, zone, computeDTO.getInstanceName())))
+                .POST(HttpRequest.BodyPublishers.ofString(String.format(
+                        "{\"maxRunDuration\":{\"seconds\":\"%s\"},\"instanceTerminationAction\":\"STOP\"}",
+                        "3600"))) // unit is in seconds
+                .header("Authorization", "Bearer " + accessToken.getTokenValue())
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode operationJson = objectMapper.readTree(response.body());
+
+        // Operation operation = objectMapper.readValue(response.body(),
+        // Operation.class); System.out.println(operation.getId());
+
+        // Afer set scheduling, start instance
+        // Check resource is done updating
+        try (ZoneOperationsClient zoneOperationsClient = ZoneOperationsClient.create()) {
+            Boolean isReady = false;
+
+            while (!isReady) {
+                GetZoneOperationRequest operationRequest = GetZoneOperationRequest.newBuilder()
+                        .setOperation(
+                                operationJson.get("name").asText()) // name of operation
+                        .setProject(project)
+                        .setZone(zone)
+                        .build();
+
+                Operation operationResponse = zoneOperationsClient.get(operationRequest);
+
+                if (operationResponse.getStatus().equals(Operation.Status.DONE)) {
+                    System.out.println(operationResponse.getStatus());
+                    isReady = true;
+                }
+            }
+        }
+
+        startInstance(computeDTO.getInstanceName());
 
         return computeDTO;
     }
