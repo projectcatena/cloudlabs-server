@@ -239,7 +239,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createLimitThenDeleteComputeEngine_whenPublicImage() throws Exception {
 
         ComputeDTO request = new ComputeDTO();
@@ -255,6 +255,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
