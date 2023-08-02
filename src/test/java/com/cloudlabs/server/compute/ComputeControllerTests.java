@@ -74,17 +74,29 @@ public class ComputeControllerTests {
 
     @BeforeAll
     public void setup() throws Exception {
+        // After getting from DB, will be detached
         Role role = roleRepository.findByName(RoleType.TUTOR);
 
         if (role == null) {
             role = new Role(RoleType.TUTOR);
         }
 
+        // If existing role is saved together with user, Hibernate will persist both
+        // and assign a new generated ID, instead of updating/merging the existing
+        // role, and then flush to db. As such, by doing this, since the role
+        // already exists, there will be a detached entity passed to persist error,
+        // as hibernate do not want to generate and save the role as a new record in
+        // database.
+        // https://thorben-janssen.com/persist-save-merge-saveorupdate-whats-difference-one-use/
         Set<Role> roles = new HashSet<>(Arrays.asList(role));
         User user = new User("ComputeTutor", "computeTutor",
                 "computetutor@gmail.com", "Pa$$w0rd");
         userRepository.save(user);
 
+        // Hence, must save role seperately if the role already exists. By doing
+        // this, the user is already in the persistance context, and the role will
+        // be updated with the user entity instead of persisted.
+        // https://stackoverflow.com/questions/31037503/spring-data-jpa-detached-entity
         user.setRoles(roles);
         userRepository.save(user);
 

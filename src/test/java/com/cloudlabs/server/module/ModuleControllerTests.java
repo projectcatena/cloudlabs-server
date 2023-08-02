@@ -65,7 +65,6 @@ public class ModuleControllerTests {
         Subnet subnet = subnetRepository.findBySubnetName("test-subnet-module");
 
         if (subnet == null) {
-            // Pre-configured on GCP
             subnetRepository.save(new Subnet("test-subnet-module", "10.254.4.0/24"));
         }
     }
