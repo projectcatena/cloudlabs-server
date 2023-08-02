@@ -8,6 +8,8 @@ import com.cloudlabs.server.compute.Compute;
 import com.cloudlabs.server.compute.ComputeRepository;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.module.dto.ModuleDTO;
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
@@ -17,7 +19,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +36,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@TestInstance(Lifecycle.PER_CLASS)
 @WithMockUser(username = "tutor", roles = { "TUTOR" })
 public class ModuleControllerTests {
 
@@ -49,6 +56,24 @@ public class ModuleControllerTests {
 
     @Autowired
     private ModuleService moduleService;
+
+    @Autowired
+    private SubnetRepository subnetRepository;
+
+    @BeforeAll
+    public void setup() throws Exception {
+        Subnet subnet = subnetRepository.findBySubnetName("test-subnet-module");
+
+        if (subnet == null) {
+            // Pre-configured on GCP
+            subnetRepository.save(new Subnet("test-subnet-module", "10.254.4.0/24"));
+        }
+    }
+
+    @AfterAll
+    void teardown() throws Exception {
+        subnetRepository.deleteBySubnetName("test-subnet-module");
+    }
 
     @Test
     void createModule_whenValidParametersGiven() throws Exception {
@@ -397,6 +422,7 @@ public class ModuleControllerTests {
         compute.setInstanceName("instance-test-linkmod");
         compute.setPrivateIPv4Address("10.10.10.1");
         compute.setMachineType("e2-medium");
+        compute.setSubnet(subnetRepository.findBySubnetName("test-subnet-module"));
         computeRepository.save(compute);
 
         ComputeDTO computeDTO = new ComputeDTO();
@@ -429,6 +455,7 @@ public class ModuleControllerTests {
         compute.setInstanceName("instance-test-linkmod");
         compute.setPrivateIPv4Address("10.10.10.1");
         compute.setMachineType("e2-medium");
+        compute.setSubnet(subnetRepository.findBySubnetName("test-subnet-module"));
         computeRepository.save(compute);
 
         ComputeDTO computeDTO = new ComputeDTO();
@@ -461,6 +488,7 @@ public class ModuleControllerTests {
         compute.setInstanceName("instance-test-removelinkmod");
         compute.setPrivateIPv4Address("10.10.10.2");
         compute.setMachineType("e2-medium");
+        compute.setSubnet(subnetRepository.findBySubnetName("test-subnet-module"));
         computeRepository.save(compute);
 
         ComputeDTO computeDTO = new ComputeDTO();
@@ -496,6 +524,7 @@ public class ModuleControllerTests {
         compute.setInstanceName("instance-test-failremovelinkmod");
         compute.setPrivateIPv4Address("10.10.10.2");
         compute.setMachineType("e2-medium");
+        compute.setSubnet(subnetRepository.findBySubnetName("test-subnet-module"));
         computeRepository.save(compute);
 
         ComputeDTO computeDTO = new ComputeDTO();

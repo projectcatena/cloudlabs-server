@@ -3,6 +3,7 @@ package com.cloudlabs.server.user;
 import com.cloudlabs.server.role.Role;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -40,7 +41,7 @@ public class User implements UserDetails {
 
   @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
   @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
-  private List<Role> roles;
+  private Set<Role> roles;
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -61,7 +62,7 @@ public class User implements UserDetails {
   }
 
   public User(String fullname, String username, String email, String password,
-      List<Role> roles) {
+      Set<Role> roles) {
     this.fullname = fullname;
     this.username = username;
     this.email = email;
@@ -138,11 +139,11 @@ public class User implements UserDetails {
     this.password = password;
   }
 
-  public List<Role> getRoles() {
+  public Set<Role> getRoles() {
     return roles;
   }
 
-  public void setRoles(List<Role> roles) {
+  public void setRoles(Set<Role> roles) {
     this.roles = roles;
   }
 }

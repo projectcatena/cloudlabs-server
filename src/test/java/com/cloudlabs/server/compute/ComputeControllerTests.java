@@ -14,6 +14,8 @@ import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.subnet.SubnetRepository;
+import com.cloudlabs.server.subnet.SubnetService;
+import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
@@ -22,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,7 +43,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@WithMockUser(username = "tutor", roles = { "TUTOR" })
+@WithMockUser(username = "tutor@gmail.com", roles = { "TUTOR" })
 @TestInstance(Lifecycle.PER_CLASS)
 public class ComputeControllerTests {
 
@@ -66,10 +67,12 @@ public class ComputeControllerTests {
     @Autowired
     private SubnetRepository subnetRepository;
 
+    @Autowired
+    private SubnetService subnetService;
+
     // Mock auth services
 
     @BeforeAll
-    @Transactional
     public void setup() throws Exception {
         Role role = roleRepository.findByName(RoleType.TUTOR);
 
@@ -77,25 +80,31 @@ public class ComputeControllerTests {
             role = new Role(RoleType.TUTOR);
         }
 
-        User user = new User("Bobby", "bobby123", "bobby123@gmail.com", "Pa$$w0rd",
-                Arrays.asList(role));
+        Set<Role> roles = new HashSet<>(Arrays.asList(role));
+        User user = new User("ComputeTutor", "computeTutor",
+                "computetutor@gmail.com", "Pa$$w0rd");
         userRepository.save(user);
 
-        // Pre-configured on GCP
-        Subnet subnet = new Subnet("test-subnet-compute", "10.254.2.0/24");
-        subnetRepository.save(subnet);
+        user.setRoles(roles);
+        userRepository.save(user);
+
+        SubnetDTO request = new SubnetDTO();
+        request.setSubnetName("test-subnet-compute");
+        request.setIpv4Range("10.254.2.0/24");
+        subnetService.createSubnet(request);
     }
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteByEmail("bobby123@gmail.com");
+        userRepository.deleteByEmail("computetutor@gmail.com");
         subnetRepository.deleteBySubnetName("test-subnet-compute");
+        subnetService.deleteSubnet("test-subnet-compute");
     }
 
     // Since get and list require an instance to be created first, the tests for
     // get and list will all be in this specific test case
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createGetListThenDeleteComputeEngine_whenPublicImage() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-public-image");
@@ -138,7 +147,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getComputeInstance_whenAuthenticatedAndAfterCreation() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance");
@@ -182,7 +191,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createThenDeleteComputeEngine_whenCustomImage() throws Exception {
 
         ComputeDTO request = new ComputeDTO();
@@ -316,7 +325,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getInstanceStatus_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance-status");
@@ -361,7 +370,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void resetInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-reset-instance");
@@ -438,7 +447,7 @@ public class ComputeControllerTests {
     // }
 
     @Test
-    @WithUserDetails(value = "bobby123@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void stopThenStartAnInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-stop-instance");
