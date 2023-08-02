@@ -49,4 +49,8 @@ public interface ComputeService {
     ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO);
 
     ComputeDTO removeComputeInstanceUsers(ComputeDTO computeDTO);
+
+    ComputeDTO limitComputeRuntime(String instanceName, Long maxRunDuration)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException;
 }
