@@ -19,14 +19,18 @@ public class Subnet {
 
     @Column(name = "ipv4_range", nullable = false)
     private String ipv4Range;
+    
+    @Column(name = "firewall_rule_name", nullable = false)
+    private String firewallRuleName;
 
     public Subnet() {
 
     }
 
-    public Subnet(String subnetName, String ipv4Range) {
+    public Subnet(String subnetName, String ipv4Range, String firewallRuleName) {
         this.subnetName = subnetName;
         this.ipv4Range = ipv4Range;
+        this.firewallRuleName = firewallRuleName;
     }
 
     public long getId() {
@@ -51,6 +55,14 @@ public class Subnet {
 
     public void setIpv4Range(String ipv4Range) {
         this.ipv4Range = ipv4Range;
+    }
+
+    public String getFirewallRuleName() {
+        return this.firewallRuleName;
+    }
+
+    public void setFirewallRuleName(String firewallRuleName) {
+        this.firewallRuleName = firewallRuleName;
     }
 
 }
