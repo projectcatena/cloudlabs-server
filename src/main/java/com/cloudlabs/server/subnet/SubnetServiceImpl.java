@@ -17,15 +17,15 @@ import com.google.cloud.compute.v1.SubnetworksSettings;
 import com.google.cloud.compute.v1.Firewall.Direction;
 import com.google.cloud.compute.v1.Network;
 import com.google.cloud.compute.v1.NetworksClient;
-
-
+import com.google.cloud.compute.v1.Operation;
+import com.google.cloud.compute.v1.Subnetwork;
+import com.google.cloud.compute.v1.SubnetworksClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +35,8 @@ public class SubnetServiceImpl implements SubnetService {
     static String region = "asia-southeast1";
     static String networkName = "cloudlabs-staging";
 
-    @Autowired SubnetRepository subnetRepository;
+    @Autowired
+    SubnetRepository subnetRepository;
 
     @Override
     public SubnetDTO createSubnet(SubnetDTO subnetDTO) {
@@ -118,35 +119,35 @@ public class SubnetServiceImpl implements SubnetService {
 
     @Override
     public SubnetDTO deleteSubnet(String subnetName)
-        throws InterruptedException, ExecutionException, TimeoutException,
-        IOException {
-            try (SubnetworksClient subnetworksClient = SubnetworksClient.create()) {
+            throws InterruptedException, ExecutionException, TimeoutException,
+            IOException {
+        try (SubnetworksClient subnetworksClient = SubnetworksClient.create()) {
 
-                DeleteSubnetworkRequest deleteSubnetworkRequest = DeleteSubnetworkRequest.newBuilder()
+            DeleteSubnetworkRequest deleteSubnetworkRequest = DeleteSubnetworkRequest.newBuilder()
                     .setProject(project)
                     .setRegion(region)
                     .setSubnetwork(subnetName)
                     .build();
 
-                OperationFuture<Operation, Operation> operation = subnetworksClient.deleteAsync(deleteSubnetworkRequest);
+            OperationFuture<Operation, Operation> operation = subnetworksClient.deleteAsync(deleteSubnetworkRequest);
 
-                Operation response = operation.get(3, TimeUnit.MINUTES);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
 
-                if (response.hasError()) {
-                    return null;
-                }
+            if (response.hasError()) {
+                return null;
+            }
 
-                Subnet subnet = subnetRepository.findBySubnetName(subnetName);
-                String firewallRuleName = subnet.getFirewallRuleName();
-                deleteFirewallRule(project, firewallRuleName);
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+            String firewallRuleName = subnet.getFirewallRuleName();
+            deleteFirewallRule(project, firewallRuleName);
 
-                subnetRepository.deleteBySubnetName(subnetName);
+            subnetRepository.deleteBySubnetName(subnetName);
 
-                SubnetDTO subnetDTO = new SubnetDTO();
-                subnetDTO.setSubnetName(subnetName);
-                subnetDTO.setStatus(response.getStatus().name());
+            SubnetDTO subnetDTO = new SubnetDTO();
+            subnetDTO.setSubnetName(subnetName);
+            subnetDTO.setStatus(response.getStatus().name());
 
-                return subnetDTO;
+            return subnetDTO;
         }
     }
 
@@ -179,7 +180,6 @@ public class SubnetServiceImpl implements SubnetService {
             }
 
             return subnetDTOs;
-
         }
     }
 
@@ -194,4 +194,3 @@ public class SubnetServiceImpl implements SubnetService {
         return subnetDTO;
     }
 }
-

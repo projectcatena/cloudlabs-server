@@ -32,7 +32,7 @@ public class ComputeController {
 			throws IOException, InterruptedException, ExecutionException,
 			TimeoutException {
 
-		ComputeDTO response = computeService.createPublicInstance(computeDTO);
+		ComputeDTO response = computeService.createPrivateInstance(computeDTO);
 
 		if (response == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

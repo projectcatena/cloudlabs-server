@@ -11,7 +11,8 @@ import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -80,7 +81,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
           "User already exists!");
     }
 
-    List<Role> roles = Arrays.asList(userRole);
+    Set<Role> roles = new HashSet<>(Arrays.asList(userRole));
     User user = new User(registerDTO.getFullname(), registerDTO.getUsername(),
         registerDTO.getEmail(),
         passwordEncoder.encode(registerDTO.getPassword()), roles);

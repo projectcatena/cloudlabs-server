@@ -17,6 +17,7 @@ public class ComputeDTO {
     private AddressDTO address;
     private String status;
     private List<UserDTO> users;
+    private Long maxRunDuration;
 
     public ComputeDTO() {
     }
@@ -91,5 +92,13 @@ public class ComputeDTO {
 
     public void setUsers(List<UserDTO> users) {
         this.users = users;
+    }
+
+    public Long getMaxRunDuration() {
+        return maxRunDuration;
+    }
+
+    public void setMaxRunDuration(Long maxRunDuration) {
+        this.maxRunDuration = maxRunDuration;
     }
 }
