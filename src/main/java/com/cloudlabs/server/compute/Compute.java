@@ -1,5 +1,6 @@
 package com.cloudlabs.server.compute;
 
+import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.user.User;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -27,28 +29,42 @@ public class Compute {
     @Column(name = "machine_type", nullable = false)
     private String machineType;
 
-    @Column(name = "external_ip_address", nullable = false)
-    private String ipv4Address;
+    @Column(name = "private_ip_address", nullable = false)
+    private String privateIPv4Address;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "computes_users", joinColumns = @JoinColumn(name = "compute_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "user_email", referencedColumnName = "email"))
     private Set<User> users = new HashSet<>();
 
+    @ManyToOne
+    @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
+    private Subnet subnet;
+
     public Compute() {
     }
 
-    public Compute(String instanceName, String machineType, String ipv4Address) {
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address) {
         this.instanceName = instanceName;
         this.machineType = machineType;
-        this.ipv4Address = ipv4Address;
+        this.privateIPv4Address = privateIPv4Address;
     }
 
-    public Compute(String instanceName, String machineType, String ipv4Address,
-            Set<User> users) {
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, Set<User> users) {
         this.instanceName = instanceName;
         this.machineType = machineType;
-        this.ipv4Address = ipv4Address;
+        this.privateIPv4Address = privateIPv4Address;
         this.users = users;
+    }
+
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, Set<User> users, Subnet subnet) {
+        this.instanceName = instanceName;
+        this.machineType = machineType;
+        this.privateIPv4Address = privateIPv4Address;
+        this.users = users;
+        this.subnet = subnet;
     }
 
     public long getId() {
@@ -75,12 +91,12 @@ public class Compute {
         this.machineType = machineType;
     }
 
-    public String getIpv4Address() {
-        return this.ipv4Address;
+    public String getPrivateIPv4Address() {
+        return privateIPv4Address;
     }
 
-    public void setIpv4Address(String ipv4Address) {
-        this.ipv4Address = ipv4Address;
+    public void setPrivateIPv4Address(String privateIPv4Address) {
+        this.privateIPv4Address = privateIPv4Address;
     }
 
     public Set<User> getUsers() {
@@ -89,5 +105,13 @@ public class Compute {
 
     public void setUsers(Set<User> users) {
         this.users = users;
+    }
+
+    public Subnet getSubnet() {
+        return subnet;
+    }
+
+    public void setSubnet(Subnet subnet) {
+        this.subnet = subnet;
     }
 }

@@ -3,6 +3,8 @@ package com.cloudlabs.server.compute;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import java.util.Arrays;
@@ -27,6 +29,9 @@ public class ComputeRepositoryTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private SubnetRepository subnetRepository;
+
     @BeforeAll
     void setup() {
 
@@ -50,19 +55,25 @@ public class ComputeRepositoryTests {
         user2.setPassword("test@123");
         userRepository.save(user2);
 
-        Compute compute = new Compute("test", "e2-micro", "10.10.1.1", users);
+        Subnet subnet = subnetRepository.findBySubnetName("test-subnet-compute-repo");
+
+        if (subnet == null) {
+            // Pre-configured on GCP
+            subnet = subnetRepository.save(
+                    new Subnet("test-subnet-compute-repo", "10.254.3.0/24"));
+        }
+
+        Compute compute = new Compute("test", "e2-micro", "10.254.3.2", users, subnet);
         computeRepository.save(compute);
     }
 
     @AfterAll
     void cleanup() {
-        // Compute compute =
-        // computeRepository.findByInstanceName("windows-server-2019");
         computeRepository.deleteByInstanceName("test");
-        // computeRepository.delete(compute);
         User user1 = userRepository.findByEmail("test@gmail.com").get();
         User user2 = userRepository.findByEmail("test2@gmail.com").get();
         userRepository.deleteAll(Arrays.asList(user1, user2));
+        subnetRepository.deleteBySubnetName("test-subnet-compute-repo");
     }
 
     @Test
