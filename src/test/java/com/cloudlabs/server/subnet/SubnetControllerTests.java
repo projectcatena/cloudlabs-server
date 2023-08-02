@@ -11,7 +11,10 @@ import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import javax.transaction.Transactional;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -51,15 +54,25 @@ public class SubnetControllerTests {
 
     @BeforeAll
     void setup() {
+
+        Role role = roleRepository.findByName(RoleType.TUTOR);
+
+        if (role == null) {
+            role = new Role(RoleType.TUTOR);
+        }
+
+        Set<Role> roles = new HashSet<>(Arrays.asList(role));
         User user = new User("SubnetTest", "subnet-test", "subnet-test@gmail.com",
-                "Pa$$w0rd", Arrays.asList(new Role(RoleType.TUTOR)));
+                "Pa$$w0rd");
+        userRepository.save(user);
+
+        user.setRoles(roles);
         userRepository.save(user);
     }
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
+        userRepository.deleteByEmail("subnet-test@gmail.com");
     }
 
     @Test
