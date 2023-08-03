@@ -2,7 +2,6 @@ package com.cloudlabs.server.compute;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -211,8 +210,10 @@ public class ComputeServiceImpl implements ComputeService {
             // Successful Instance Creation, save Compute and Current User to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
                     publicIPAddressDTO.getIpv4Address(),
-                    diskSizeGb, sourceImageDTO.getName(),
-                    new HashSet<>(Arrays.asList(user)));
+                    diskSizeGb, sourceImageDTO.getName());
+            Set<User> userSet = new HashSet<User>();
+            userSet.add(user);
+            compute.setUsers(userSet);
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -365,8 +366,10 @@ public class ComputeServiceImpl implements ComputeService {
             // Successful Instance Creation, save to Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
                     publicIPAddressDTO.getIpv4Address(),
-                    diskSizeGb, sourceImageDTO.getName(),
-                    new HashSet<>(Arrays.asList(user)));
+                    diskSizeGb, sourceImageDTO.getName());
+            Set<User> userSet = new HashSet<User>();
+            userSet.add(user);
+            compute.setUsers(userSet);
             computeRepository.save(compute);
 
             return responseComputeDTO;
@@ -560,7 +563,8 @@ public class ComputeServiceImpl implements ComputeService {
         String email = authenticationToken.getName();
         System.out.println(email);
         System.out.println(instanceName);
-
+        Compute computeInstanceName = computeRepository.findByInstanceName(instanceName).get();
+        System.out.println(computeInstanceName);
         // Ensure that only assigned users can see the instance
         Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, instanceName)
                 .orElse(null);

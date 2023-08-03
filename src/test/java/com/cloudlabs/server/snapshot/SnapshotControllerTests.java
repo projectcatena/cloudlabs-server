@@ -2,8 +2,7 @@ package com.cloudlabs.server.snapshot;
 
 import java.util.Arrays;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -11,9 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -71,17 +72,30 @@ public class SnapshotControllerTests {
         return response;
     }
 
-    @BeforeAll
-    void setup() {
+    void deleteAfterUse(String jsonString, ComputeDTO response) throws Exception {
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+
+        //Delete snapshot after testing
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(jsonString))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @BeforeEach
+    void setup(@Autowired JdbcTemplate jdbcTemplate) {
+        JdbcTestUtils.deleteFromTables(jdbcTemplate, "users_roles");
+        JdbcTestUtils.deleteFromTables(jdbcTemplate, "user_table");
+        JdbcTestUtils.deleteFromTables(jdbcTemplate, "roles");
         User user = new User("Bobby", "tutor", "test@gmail.com", "Pa$$w0rd",
                 Arrays.asList(new Role(RoleType.TUTOR)));
         userRepository.save(user);
-    }
 
-    @AfterEach
-    void deleteUser() {
-        User user = userRepository.findByEmail("test@gmail.com").get();
-        userRepository.delete(user);
+        
     }
     
     @Test
@@ -99,17 +113,7 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-         // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(response)))
-        .andExpect(MockMvcResultMatchers.status().isOk());
-
-        //Delete snapshot after testing
-        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(jsonString))
-        .andExpect(MockMvcResultMatchers.status().isOk());
+        deleteAfterUse(jsonString, response);
     }
 
     @Test
@@ -135,7 +139,7 @@ public class SnapshotControllerTests {
             .andExpect(MockMvcResultMatchers.status().isOk());
         
          // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(response)))
         .andExpect(MockMvcResultMatchers.status().isOk());
@@ -161,17 +165,7 @@ public class SnapshotControllerTests {
         this.mockMvc.perform(MockMvcRequestBuilders.get("/snapshot/list"))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-         // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.delete("/compute/delete"))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(response)))
-        .andExpect(MockMvcResultMatchers.status().isOk());
-
-        //Delete snapshot after testing
-        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(jsonString))
-        .andExpect(MockMvcResultMatchers.status().isOk());
+        deleteAfterUse(jsonString, response);
     }
 
     @Test
@@ -196,17 +190,7 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-         // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(response)))
-        .andExpect(MockMvcResultMatchers.status().isOk());
-
-        //Delete snapshot after testing
-        this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(jsonString))
-        .andExpect(MockMvcResultMatchers.status().isOk());
+        deleteAfterUse(jsonString, response);
     }
 
     @Test
@@ -225,13 +209,6 @@ public class SnapshotControllerTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
-        
-         // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(response)))
-        .andExpect(MockMvcResultMatchers.status().isOk());
-
         
     }
 }
