@@ -5,12 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
+import com.cloudlabs.server.subnet.SubnetService;
+import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
@@ -38,7 +43,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@WithMockUser(username = "tutor", roles = { "TUTOR" })
+@WithMockUser(username = "tutor@gmail.com", roles = { "TUTOR" })
 @TestInstance(Lifecycle.PER_CLASS)
 public class ComputeControllerTests {
 
@@ -59,41 +64,60 @@ public class ComputeControllerTests {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private SubnetRepository subnetRepository;
+
+    @Autowired
+    private SubnetService subnetService;
+
     // Mock auth services
 
     @BeforeAll
-    void setup() {
-        User user = new User("Bobby", "bobby123", "test@gmail.com", "Pa$$w0rd",
-                Arrays.asList(new Role(RoleType.TUTOR)));
+    public void setup() throws Exception {
+        // After getting from DB, will be detached
+        Role role = roleRepository.findByName(RoleType.TUTOR);
+
+        if (role == null) {
+            role = new Role(RoleType.TUTOR);
+        }
+
+        // If existing role is saved together with user, Hibernate will persist both
+        // and assign a new generated ID, instead of updating/merging the existing
+        // role, and then flush to db. As such, by doing this, since the role
+        // already exists, there will be a detached entity passed to persist error,
+        // as hibernate do not want to generate and save the role as a new record in
+        // database.
+        // https://thorben-janssen.com/persist-save-merge-saveorupdate-whats-difference-one-use/
+        Set<Role> roles = new HashSet<>(Arrays.asList(role));
+        User user = new User("ComputeTutor", "computeTutor",
+                "computetutor@gmail.com", "Pa$$w0rd");
         userRepository.save(user);
+
+        // Hence, must save role seperately if the role already exists. By doing
+        // this, the user is already in the persistance context, and the role will
+        // be updated with the user entity instead of persisted.
+        // https://stackoverflow.com/questions/31037503/spring-data-jpa-detached-entity
+        user.setRoles(roles);
+        userRepository.save(user);
+
+        SubnetDTO request = new SubnetDTO();
+        request.setSubnetName("test-subnet-compute");
+        request.setIpv4Range("10.254.2.0/24");
+        subnetService.createSubnet(request);
     }
 
     @AfterAll
     void teardown() throws Exception {
-        // Will find all compute instances in DB and delete one by one
-        List<Compute> computes = computeRepository.findAll();
-        for (Compute compute : computes) {
-
-            // Delete instance and release its public IP Address after test
-            ComputeDTO deleteComputeDTO = computeService.deleteInstance(compute.getInstanceName());
-
-            // Release IP
-            computeService.releaseStaticExternalIPAddress(
-                    String.format("%s-public-ip", compute.getInstanceName()));
-
-            assertNotNull(deleteComputeDTO.getStatus());
-        }
-
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
+        userRepository.deleteByEmail("computetutor@gmail.com");
+        subnetRepository.deleteBySubnetName("test-subnet-compute");
+        subnetService.deleteSubnet("test-subnet-compute");
     }
 
     // Since get and list require an instance to be created first, the tests for
     // get and list will all be in this specific test case
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createGetListThenDeleteComputeEngine_whenPublicImage() throws Exception {
-
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-public-image");
         request.setStartupScript("");
@@ -107,6 +131,10 @@ public class ComputeControllerTests {
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
 
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
 
         this.mockMvc
@@ -114,20 +142,24 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
-    }
 
-    @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
-    void listComputeInstances_whenAuthenticatedAndAfterCreation() throws Exception {
+        // List
         this.mockMvc
                 .perform(MockMvcRequestBuilders.get("/compute/list")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isNotEmpty());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getComputeInstance_whenAuthenticatedAndAfterCreation() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance");
@@ -141,6 +173,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -157,10 +193,17 @@ public class ComputeControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.instanceName").isNotEmpty());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createThenDeleteComputeEngine_whenCustomImage() throws Exception {
 
         ComputeDTO request = new ComputeDTO();
@@ -175,10 +218,61 @@ public class ComputeControllerTests {
         machineTypeDTO.setName("e2-medium");
         request.setMachineType(machineTypeDTO);
 
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    void createLimitThenDeleteComputeEngine_whenPublicImage() throws Exception {
+
+        ComputeDTO request = new ComputeDTO();
+        request.setInstanceName("test-limit-runtime-public-image");
+        request.setStartupScript("");
+        request.setMaxRunDuration(Long.valueOf(120));
+
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("debian-11");
+        sourceImageDTO.setProject("debian-cloud");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-micro");
+        request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.maxRunDuration").value(120));
+
+        // Cleanup only need instance name
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
@@ -201,6 +295,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -228,6 +326,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e10-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -275,7 +377,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getInstanceStatus_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance-status");
@@ -289,6 +391,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -306,15 +412,43 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void resetInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName("test-public-image");
+        request.setInstanceName("test-reset-instance");
         request.setStartupScript("");
 
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName("debian-11");
+        sourceImageDTO.setProject("debian-cloud");
+        request.setSourceImage(sourceImageDTO);
+
+        MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
+        machineTypeDTO.setName("e2-micro");
+        request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
+
         String jsonString = objectMapper.writeValueAsString(request);
+
+        // Create an instance
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
 
         // Reset instance
         this.mockMvc
@@ -323,6 +457,13 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     // @Test
@@ -358,7 +499,7 @@ public class ComputeControllerTests {
     // }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void stopThenStartAnInstance_whenInstanceNameGiven() throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-stop-instance");
@@ -372,6 +513,10 @@ public class ComputeControllerTests {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName("e2-micro");
         request.setMachineType(machineTypeDTO);
+
+        AddressDTO addressDTO = new AddressDTO();
+        addressDTO.setSubnetName("test-subnet-compute");
+        request.setAddress(addressDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -397,6 +542,13 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Cleanup
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/compute/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -443,7 +595,9 @@ public class ComputeControllerTests {
     @Test
     void addComputeInstanceUsers_whenValidParametersGiven() throws Exception {
         // Create an entry in database will do, as this doesn't need GCP to test
-        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1");
+        Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
+        subnetRepository.save(subnet);
+        Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1", null, subnet);
         computeRepository.save(compute);
 
         // Create new test user
@@ -479,6 +633,7 @@ public class ComputeControllerTests {
         // Clean up manually as teardown() will fail since no actual instance is
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
+        subnetRepository.deleteBySubnetName("test-subnet");
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 
@@ -495,7 +650,10 @@ public class ComputeControllerTests {
         users.add(user);
 
         // Create an entry in database will do, as this doesn't need GCP to test
-        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1", users);
+        Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
+        subnetRepository.save(subnet);
+        Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1",
+                users, subnet);
         computeRepository.save(compute);
 
         assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
@@ -526,6 +684,7 @@ public class ComputeControllerTests {
         // Clean up manually as teardown() will fail since no actual instance is
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
+        subnetRepository.deleteBySubnetName("test-subnet");
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 }

@@ -1,28 +1,26 @@
 package com.cloudlabs.server.compute.dto;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-
 @JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
 public class AddressDTO {
-   private String name;
-   private String ipv4Address;
+ private String subnetName;
+ private String privateIPv4Address;
 
-    public String getName() {
-        return this.name;
-    }
+ public String getSubnetName() {
+  return subnetName;
+ }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+ public void setSubnetName(String subnetName) {
+  this.subnetName = subnetName;
+ }
 
-    public String getIpv4Address() {
-        return this.ipv4Address;
-    }
+ public String getPrivateIPv4Address() {
+  return privateIPv4Address;
+ }
 
-    public void setIpv4Address(String ipv4Address) {
-        this.ipv4Address = ipv4Address;
-    }
+ public void setPrivateIPv4Address(String privateIPv4Address) {
+  this.privateIPv4Address = privateIPv4Address;
+ }
 }

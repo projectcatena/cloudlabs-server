@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 public interface ComputeService {
-    ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata);
+    ComputeDTO createPrivateInstance(ComputeDTO computeInstanceMetadata);
 
     ComputeDTO deleteInstance(String instanceName)
             throws InterruptedException, ExecutionException, TimeoutException,
@@ -18,7 +18,7 @@ public interface ComputeService {
     void reserveStaticExternalIPAddress(String ipAddressName)
             throws InterruptedException, ExecutionException, IOException;
 
-    AddressDTO getExternalStaticIPAdress(String addressName);
+    AddressDTO getInternalIpAddress(String instanceName);
 
     void assignStaticExternalIPAddress(String instanceName, String ipAddress,
             String networkInterfaceName)
@@ -49,4 +49,8 @@ public interface ComputeService {
     ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO);
 
     ComputeDTO removeComputeInstanceUsers(ComputeDTO computeDTO);
+
+    ComputeDTO limitComputeRuntime(String instanceName, Long maxRunDuration)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException;
 }

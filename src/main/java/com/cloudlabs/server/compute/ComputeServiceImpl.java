@@ -4,10 +4,16 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
 import com.cloudlabs.server.user.dto.UserDTO;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.longrunning.OperationFuture;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AddAccessConfigInstanceRequest;
 import com.google.cloud.compute.v1.Address;
@@ -18,6 +24,7 @@ import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
 import com.google.cloud.compute.v1.DeleteAddressRequest;
 import com.google.cloud.compute.v1.DeleteInstanceRequest;
 import com.google.cloud.compute.v1.GetInstanceRequest;
+import com.google.cloud.compute.v1.GetZoneOperationRequest;
 import com.google.cloud.compute.v1.InsertAddressRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -34,7 +41,12 @@ import com.google.cloud.compute.v1.ResetInstanceRequest;
 import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
+import com.google.cloud.compute.v1.ZoneOperationsClient;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,6 +57,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -52,10 +65,21 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
-    // https://cloud.google.com/compute/docs/api/libraries
-    static String project = "cloudlabs-387310";
-    static String zone = "asia-southeast1-b";
-    static String region = "asia-southeast1";
+    // project-382920
+    @Value("${gcp.project.id}")
+    private String project;
+
+    // asia-southeast1-c
+    @Value("${gcp.project.zone}")
+    private String zone;
+
+    // asia-southeast1
+    @Value("${gcp.project.region}")
+    private String region;
+
+    // vpc-name
+    @Value("${gcp.project.vpc}")
+    private String vpc;
 
     @Autowired
     private ComputeRepository computeRepository;
@@ -63,8 +87,13 @@ public class ComputeServiceImpl implements ComputeService {
     @Autowired
     private UserRepository userRepository;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private SubnetRepository subnetRepository;
+
     @Override
-    public ComputeDTO createPublicInstance(ComputeDTO computeInstanceMetadata) {
+    public ComputeDTO createPrivateInstance(ComputeDTO computeInstanceMetadata) {
         // Initialize client that will be used to send requests. This client only
         // needs to be created once, and can be reused for multiple requests. After
         // completing all of your requests, call the `instancesClient.close()`
@@ -106,7 +135,9 @@ public class ComputeServiceImpl implements ComputeService {
             long diskSizeGb = computeInstanceMetadata.getDiskSizeGb();
             String networkName = computeInstanceMetadata.getNetworkName();
             String instanceName = computeInstanceMetadata.getInstanceName();
+            String subnetName = computeInstanceMetadata.getAddress().getSubnetName();
             String startupScript = computeInstanceMetadata.getStartupScript();
+            Long maxRunDuration = computeInstanceMetadata.getMaxRunDuration();
 
             if (startupScript == null) {
                 startupScript = "";
@@ -126,21 +157,23 @@ public class ComputeServiceImpl implements ComputeService {
                     .build();
 
             // Reserve Public IP Address for the instance
-            String addressResourceName = String.format("%s-public-ip", instanceName);
-            reserveStaticExternalIPAddress(addressResourceName);
-
-            // Get value of newly created external IP address
-            AddressDTO publicIPAddressDTO = getExternalStaticIPAdress(addressResourceName);
+            // String addressResourceName = String.format("%s-public-ip",
+            // instanceName); reserveStaticExternalIPAddress(addressResourceName);
 
             // Assign created public IP at instance creation
-            AccessConfig addPublicIpAddressConfig = AccessConfig.newBuilder()
-                    .setNatIP(publicIPAddressDTO.getIpv4Address())
-                    .build();
+            // AccessConfig addPublicIpAddressConfig = AccessConfig.newBuilder()
+            // .setNatIP(publicIPAddressDTO.getIpv4Address())
+            // .build();
 
             // Use the network interface provided in the networkName argument.
             NetworkInterface networkInterface = NetworkInterface.newBuilder()
                     .setName(networkName)
-                    .addAccessConfigs(addPublicIpAddressConfig)
+                    .setNetwork(String.format("projects/%s/global/networks/%s",
+                            project, vpc)) // VPC name
+                    .setSubnetwork(String.format(
+                            "projects/%s/regions/%s/subnetworks/%s", project, region,
+                            subnetName)) // Subnet resource name
+                    // .addAccessConfigs(addPublicIpAddressConfig)
                     .build();
 
             ServiceAccount serviceAccount = ServiceAccount.newBuilder()
@@ -186,13 +219,12 @@ public class ComputeServiceImpl implements ComputeService {
                 return null;
             }
 
-            // Attach the Public IP Address to the instance's default network
-            // interface: nic0 assignStaticExternalIPAddress(instanceName,
-            // publicIPAddressDTO.getIpv4Address(), "nic0");
+            // Get instance dynamically assigned private IP after creation
+            AddressDTO addressDTO = getInternalIpAddress(instanceName);
 
             ComputeDTO responseComputeDTO = new ComputeDTO();
             responseComputeDTO.setInstanceName(instanceName);
-            responseComputeDTO.setAddress(publicIPAddressDTO);
+            responseComputeDTO.setAddress(addressDTO);
 
             // Get current user from security context
             UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
@@ -204,14 +236,27 @@ public class ComputeServiceImpl implements ComputeService {
             // Find user by email
             User user = userRepository.findByEmail(email).get();
 
-            // Successful Instance Creation, save Compute and Current User to Database
+            // Find subnet by subnet name
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+
+            // Successful Instance Creation, save Compute and Current User to
+            // Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
-                    publicIPAddressDTO.getIpv4Address(),
-                    new HashSet<>(Arrays.asList(user)));
+                    addressDTO.getPrivateIPv4Address(),
+                    new HashSet<>(Arrays.asList(user)), subnet);
             computeRepository.save(compute);
+
+            // Minimum of 120 seconds otherwise instance fail to start
+            if (!(maxRunDuration == null || maxRunDuration < 120)) {
+                // Then, set limit runtime
+                ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(instanceName, maxRunDuration);
+                responseComputeDTO.setMaxRunDuration(
+                        limitRuntimeResponseDTO.getMaxRunDuration());
+            }
 
             return responseComputeDTO;
         } catch (Exception exception) {
+            exception.printStackTrace();
             return null;
         }
     }
@@ -273,13 +318,42 @@ public class ComputeServiceImpl implements ComputeService {
      * @param addressName
      * @return the external static IP address of the instance
      */
-    public AddressDTO getExternalStaticIPAdress(String addressName) {
-        try (AddressesClient addressClient = AddressesClient.create()) {
-            Address address = addressClient.get(project, region, addressName);
+    // public AddressDTO getExternalStaticIPAdress(String addressName) {
+    // try (AddressesClient addressClient = AddressesClient.create()) {
+    // Address address = addressClient.get(project, region, addressName);
+    //
+    // AddressDTO addressDTO = new AddressDTO();
+    // addressDTO.setIpv4Address(address.getAddress());
+    // addressDTO.setName(addressName);
+    //
+    // return addressDTO;
+    // } catch (Exception exception) {
+    // return null;
+    // }
+    // }
+
+    /**
+     * Get internal or private IP address of the instance. The address is
+     * dynamically assigned upon creation.
+     *
+     */
+    public AddressDTO getInternalIpAddress(String instanceName) {
+        try (InstancesClient instancesClient = InstancesClient.create()) {
+
+            GetInstanceRequest getInstanceRequest = GetInstanceRequest.newBuilder()
+                    .setZone(zone)
+                    .setProject(project)
+                    .setInstance(instanceName)
+                    .build();
+
+            Instance instance = instancesClient.get(getInstanceRequest);
+
+            // Get default interface
+            NetworkInterface networkInterface = instance.getNetworkInterfaces(0);
 
             AddressDTO addressDTO = new AddressDTO();
-            addressDTO.setIpv4Address(address.getAddress());
-            addressDTO.setName(addressName);
+            addressDTO.setPrivateIPv4Address(networkInterface.getNetworkIP());
+            addressDTO.setSubnetName(networkInterface.getSubnetwork());
 
             return addressDTO;
         } catch (Exception exception) {
@@ -371,7 +445,8 @@ public class ComputeServiceImpl implements ComputeService {
 
         for (Compute compute : computeInstances) {
             AddressDTO addressDTO = new AddressDTO();
-            addressDTO.setIpv4Address(compute.getIpv4Address());
+            addressDTO.setPrivateIPv4Address(compute.getPrivateIPv4Address());
+            addressDTO.setSubnetName(compute.getSubnet().getSubnetName());
 
             MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
             machineTypeDTO.setName(compute.getMachineType());
@@ -406,7 +481,8 @@ public class ComputeServiceImpl implements ComputeService {
         }
 
         AddressDTO addressDTO = new AddressDTO();
-        addressDTO.setIpv4Address(compute.getIpv4Address());
+        addressDTO.setPrivateIPv4Address(compute.getPrivateIPv4Address());
+        addressDTO.setSubnetName(compute.getSubnet().getSubnetName());
 
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName(compute.getMachineType());
@@ -562,14 +638,6 @@ public class ComputeServiceImpl implements ComputeService {
         // Get list of users from entity
         Set<User> users = compute.get().getUsers();
 
-        /*
-         * users = users.stream()
-         * .filter(user -> userDTOs.stream()
-         * .map(UserDto::getEmail)
-         * .anyMatch(UserDTOEmail ->
-         * user.getEmail().equals(UserDTOEmail))) .collect(Collectors.toSet());
-         */
-
         List<UserDTO> userDTOs = new ArrayList<>();
 
         // Get a list of users to remove
@@ -588,18 +656,72 @@ public class ComputeServiceImpl implements ComputeService {
             }
         }
 
-        /*
-         * Boolean isSuccess = users.removeIf(
-         * user -> userDTOs.stream()
-         * .map(UserDto::getEmail)
-         * .anyMatch(UserDTOEmail -> user.getEmail() == UserDTOEmail));
-         */
-
         // Flush changes to database
         compute.get().setUsers(users);
         computeRepository.save(compute.get());
 
         computeDTO.setUsers(userDTOs);
+
+        return computeDTO;
+    }
+
+    @Override
+    public ComputeDTO limitComputeRuntime(String instanceName,
+            Long maxRunDuration)
+            throws IOException, InterruptedException, ExecutionException,
+            TimeoutException {
+
+        // Get access token from ADC
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        AccessToken accessToken = credentials.refreshAccessToken();
+
+        // Stop VM
+        stopInstance(instanceName);
+
+        // Update Scheduling
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(String.format(
+                        "https://compute.googleapis.com/compute/beta/projects/%s/zones/%s/instances/%s/setScheduling",
+                        project, zone, instanceName)))
+                .POST(HttpRequest.BodyPublishers.ofString(String.format(
+                        "{\"maxRunDuration\":{\"seconds\":\"%s\"},\"instanceTerminationAction\":\"STOP\"}",
+                        maxRunDuration))) // unit is in seconds
+                .header("Authorization", "Bearer " + accessToken.getTokenValue())
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode operationJson = objectMapper.readTree(response.body());
+
+        // Check resource is done updating by polling every 10 seconds
+        try (ZoneOperationsClient zoneOperationsClient = ZoneOperationsClient.create()) {
+
+            while (true) {
+                // Compute instances are zone-based
+                GetZoneOperationRequest operationRequest = GetZoneOperationRequest.newBuilder()
+                        .setOperation(
+                                operationJson.get("name").asText()) // name of operation
+                        .setProject(project)
+                        .setZone(zone)
+                        .build();
+
+                Operation operationResponse = zoneOperationsClient.get(operationRequest);
+
+                if (operationResponse.getStatus().equals(Operation.Status.DONE)) {
+                    System.out.println(operationResponse.getStatus());
+                    break;
+                }
+
+                Thread.sleep(10000);
+            }
+        }
+
+        // Afer set scheduling, start instance
+        startInstance(instanceName);
+
+        ComputeDTO computeDTO = new ComputeDTO();
+        computeDTO.setInstanceName(instanceName);
+        computeDTO.setMaxRunDuration(maxRunDuration);
 
         return computeDTO;
     }
