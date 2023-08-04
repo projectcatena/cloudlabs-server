@@ -4,6 +4,9 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.module.Module;
+import com.cloudlabs.server.module.ModuleRepository;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
@@ -49,6 +52,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -91,6 +95,9 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private SubnetRepository subnetRepository;
+
+    @Autowired
+    private ModuleRepository moduleRepository;
 
     @Override
     public ComputeDTO createPrivateInstance(ComputeDTO computeInstanceMetadata) {
@@ -138,6 +145,7 @@ public class ComputeServiceImpl implements ComputeService {
             String subnetName = computeInstanceMetadata.getAddress().getSubnetName();
             String startupScript = computeInstanceMetadata.getStartupScript();
             Long maxRunDuration = computeInstanceMetadata.getMaxRunDuration();
+            ModuleDTO moduleDTO = computeInstanceMetadata.getModule();
 
             if (startupScript == null) {
                 startupScript = "";
@@ -245,6 +253,15 @@ public class ComputeServiceImpl implements ComputeService {
                     addressDTO.getPrivateIPv4Address(),
                     new HashSet<>(Arrays.asList(user)), subnet);
             computeRepository.save(compute);
+
+            Module module = moduleRepository.findByModuleId(moduleDTO.getModuleId());
+
+            if (module == null) {
+                return null;
+            }
+
+            module.setComputes(new HashSet<>(Arrays.asList(compute)));
+            moduleRepository.save(module);
 
             // Minimum of 120 seconds otherwise instance fail to start
             if (!(maxRunDuration == null || maxRunDuration < 120)) {
@@ -430,7 +447,7 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public List<ComputeDTO> listComputeInstances() {
+    public List<ComputeDTO> listComputeInstances(Long moduleId) {
 
         // Get email from Jwt token using context
         UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
@@ -439,7 +456,7 @@ public class ComputeServiceImpl implements ComputeService {
 
         String email = authenticationToken.getName();
 
-        List<Compute> computeInstances = computeRepository.findByUsers_Email(email);
+        List<Compute> computeInstances = computeRepository.findByUsers_EmailAndModuleId(email, moduleId);
 
         List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
 

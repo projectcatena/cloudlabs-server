@@ -52,9 +52,9 @@ public class ComputeController {
 	}
 
 	@GetMapping("/list")
-	public List<ComputeDTO> listComputeInstances() {
+	public List<ComputeDTO> listComputeInstances(@RequestParam Long moduleId) {
 
-		List<ComputeDTO> response = computeService.listComputeInstances();
+		List<ComputeDTO> response = computeService.listComputeInstances(moduleId);
 
 		return response;
 	}

@@ -1,5 +1,6 @@
 package com.cloudlabs.server.compute;
 
+import com.cloudlabs.server.module.Module;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.user.User;
 import java.util.HashSet;
@@ -39,6 +40,9 @@ public class Compute {
     @ManyToOne
     @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
     private Subnet subnet;
+
+    @ManyToOne
+    private Module module;
 
     public Compute() {
     }

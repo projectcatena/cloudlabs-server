@@ -10,6 +10,8 @@ public interface ComputeRepository extends JpaRepository<Compute, Long> {
 
     List<Compute> findByUsers_Email(String email);
 
+    List<Compute> findByUsers_EmailAndModuleId(String email, Long moduleId);
+
     Optional<Compute> findByUsers_EmailAndInstanceName(String email,
             String instanceName);
 
