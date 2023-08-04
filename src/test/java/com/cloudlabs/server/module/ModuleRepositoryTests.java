@@ -53,7 +53,7 @@ public class ModuleRepositoryTests {
         Module module = new Module("Subtitle", "Name", "Description", users);
         moduleRepository.save(module);
 
-        assertNotNull(moduleRepository.findByModuleId(module.getModuleId()));
+        assertNotNull(moduleRepository.findById(module.getModuleId()));
     }
 
     @AfterAll

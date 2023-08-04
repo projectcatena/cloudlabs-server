@@ -23,7 +23,7 @@ public class Module {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long moduleId;
+    private Long id;
 
     @Column(name = "subtitle", nullable = false)
     private String moduleSubtitle;
@@ -35,11 +35,11 @@ public class Module {
     private String moduleDescription;
 
     @OneToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinColumn(name = "module_id", referencedColumnName = "moduleId")
+    @JoinColumn(name = "module_id", referencedColumnName = "id")
     private Set<Compute> computes = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "modules_users", joinColumns = @JoinColumn(name = "module_id", referencedColumnName = "moduleId"), inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    @JoinTable(name = "modules_users", joinColumns = @JoinColumn(name = "module_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
     private Set<User> users = new HashSet<>();
 
     public Module() {
@@ -71,11 +71,11 @@ public class Module {
     }
 
     public Long getModuleId() {
-        return this.moduleId;
+        return this.id;
     }
 
-    public void setModuleId(Long moduleId) {
-        this.moduleId = moduleId;
+    public void setModuleId(Long id) {
+        this.id = id;
     }
 
     public String getModuleSubtitle() {

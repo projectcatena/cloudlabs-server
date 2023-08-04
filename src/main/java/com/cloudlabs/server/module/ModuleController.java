@@ -36,11 +36,11 @@ public class ModuleController {
         return response;
     }
 
-    @GetMapping("/{moduleId}")
-    public ModuleDTO getModuleById(@PathVariable String moduleId)
+    @GetMapping("/{id}")
+    public ModuleDTO getModuleById(@PathVariable String id)
             throws IOException {
-        Long moduleIdAsLong = Long.valueOf(moduleId);
-        ModuleDTO response = moduleService.getModuleById(moduleIdAsLong);
+        Long idAsLong = Long.valueOf(id);
+        ModuleDTO response = moduleService.getModuleById(idAsLong);
 
         return response;
     }
@@ -60,27 +60,27 @@ public class ModuleController {
         return response;
     }
 
-    @DeleteMapping("/delete/{moduleId}")
+    @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
-    public ModuleDTO deleteModule(@PathVariable String moduleId)
+    public ModuleDTO deleteModule(@PathVariable String id)
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException {
 
-        Long moduleIdAsLong = Long.valueOf(moduleId);
-        ModuleDTO response = moduleService.deleteModule(moduleIdAsLong);
+        Long idAsLong = Long.valueOf(id);
+        ModuleDTO response = moduleService.deleteModule(idAsLong);
 
         return response;
     }
 
-    @PutMapping("/update/{moduleId}")
+    @PutMapping("/update/{id}")
     @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
-    public ModuleDTO updateModule(@PathVariable String moduleId,
+    public ModuleDTO updateModule(@PathVariable String id,
             @RequestBody ModuleDTO moduleDTO)
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException {
 
-        Long moduleIdAsLong = Long.valueOf(moduleId);
-        ModuleDTO response = moduleService.updateModule(moduleIdAsLong, moduleDTO);
+        Long idAsLong = Long.valueOf(id);
+        ModuleDTO response = moduleService.updateModule(idAsLong, moduleDTO);
 
         if (response == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
