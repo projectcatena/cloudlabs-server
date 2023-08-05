@@ -109,7 +109,6 @@ public class ComputeControllerTests {
     @AfterAll
     void teardown() throws Exception {
         userRepository.deleteByEmail("computetutor@gmail.com");
-        subnetRepository.deleteBySubnetName("test-subnet-compute");
         subnetService.deleteSubnet("test-subnet-compute");
     }
 

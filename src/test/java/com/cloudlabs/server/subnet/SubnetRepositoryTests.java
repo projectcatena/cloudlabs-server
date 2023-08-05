@@ -15,7 +15,7 @@ public class SubnetRepositoryTests {
 
     @BeforeEach
     void setup() {
-        Subnet subnet = new Subnet("test-subnet", "10.10.2.0/24");
+        Subnet subnet = new Subnet("test-subnet", "10.10.2.0/24", "test-subnet-allow-intranet");
         subnetRepository.save(subnet);
     }
 

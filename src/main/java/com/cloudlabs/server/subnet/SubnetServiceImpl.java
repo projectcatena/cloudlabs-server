@@ -2,8 +2,19 @@ package com.cloudlabs.server.subnet;
 
 import com.cloudlabs.server.subnet.dto.SubnetDTO;
 import com.google.api.gax.longrunning.OperationFuture;
+import com.google.cloud.compute.v1.Operation;
+import com.google.cloud.compute.v1.Operation.Status;
+import com.google.cloud.compute.v1.Allowed;
 import com.google.cloud.compute.v1.DeleteSubnetworkRequest;
+import com.google.cloud.compute.v1.Firewall;
+import com.google.cloud.compute.v1.FirewallsClient;
+import com.google.cloud.compute.v1.InsertFirewallRequest;
 import com.google.cloud.compute.v1.InsertSubnetworkRequest;
+import com.google.cloud.compute.v1.ListSubnetworksRequest;
+import com.google.cloud.compute.v1.Subnetwork;
+import com.google.cloud.compute.v1.SubnetworksClient;
+import com.google.cloud.compute.v1.SubnetworksSettings;
+import com.google.cloud.compute.v1.Firewall.Direction;
 import com.google.cloud.compute.v1.Network;
 import com.google.cloud.compute.v1.NetworksClient;
 import com.google.cloud.compute.v1.Operation;
@@ -59,11 +70,14 @@ public class SubnetServiceImpl implements SubnetService {
                 return null;
             }
 
+            String firewallRuleName = (subnetName + "-allow-intranet");
+            createFirewallRule(ipv4Range, network, project, firewallRuleName);
+
             SubnetDTO responseNetworkDTO = new SubnetDTO();
             responseNetworkDTO.setSubnetName(subnetName);
             responseNetworkDTO.setIpv4Range(ipv4Range);
 
-            Subnet subnet = new Subnet(subnetName, ipv4Range);
+            Subnet subnet = new Subnet(subnetName, ipv4Range, firewallRuleName);
             subnetRepository.save(subnet);
 
             return responseNetworkDTO;
@@ -73,6 +87,35 @@ public class SubnetServiceImpl implements SubnetService {
             return null;
         }
     }
+
+    @Override
+    public void createFirewallRule(String ipv4Range, Network network, String project, String firewallRuleName) throws IOException, 
+    ExecutionException, InterruptedException, TimeoutException {
+        try (FirewallsClient firewallsClient = FirewallsClient.create()) {
+
+            // The below firewall rule is created in the default network.
+            Firewall firewallRule = Firewall.newBuilder()
+                    .setName(firewallRuleName)
+                    .setDirection(Direction.INGRESS.toString())
+                    .addAllowed(
+                        Allowed.newBuilder().setIPProtocol("all").build())
+                    .addSourceRanges(ipv4Range)
+                    .addDestinationRanges(ipv4Range)
+                    .setNetwork(network.getSelfLink())
+                    .addSourceServiceAccounts("678591755363-compute@developer.gserviceaccount.com")
+                    .setDescription("Allowing communication in subnets")
+                    .build();
+
+            InsertFirewallRequest insertFirewallRequest = InsertFirewallRequest.newBuilder()
+            .setFirewallResource(firewallRule)
+            .setProject(project).build();
+
+            firewallsClient.insertAsync(insertFirewallRequest).get(3, TimeUnit.MINUTES);
+
+            System.out.println("Firewall rule created successfully -> " + firewallRuleName);
+        }
+    }
+
 
     @Override
     public SubnetDTO deleteSubnet(String subnetName)
@@ -94,6 +137,10 @@ public class SubnetServiceImpl implements SubnetService {
                 return null;
             }
 
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+            String firewallRuleName = subnet.getFirewallRuleName();
+            deleteFirewallRule(project, firewallRuleName);
+
             subnetRepository.deleteBySubnetName(subnetName);
 
             SubnetDTO subnetDTO = new SubnetDTO();
@@ -101,6 +148,19 @@ public class SubnetServiceImpl implements SubnetService {
             subnetDTO.setStatus(response.getStatus().name());
 
             return subnetDTO;
+        }
+    }
+
+    @Override
+    public void deleteFirewallRule(String project, String firewallRuleName) throws IOException, 
+    ExecutionException, InterruptedException, TimeoutException {
+        try (FirewallsClient firewallsClient = FirewallsClient.create()) {
+
+            OperationFuture<Operation, Operation> operation = firewallsClient.deleteAsync(project,
+                firewallRuleName);
+            operation.get(3, TimeUnit.MINUTES);
+      
+            System.out.println("Deleted firewall rule -> " + firewallRuleName);
         }
     }
 
