@@ -72,10 +72,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   @Override
   public AuthenticationResponseDTO register(RegisterDTO registerDTO) {
     Role userRole = roleRepository.findByName(RoleType.USER);
-    Role tutorRole = null;
+
     if (userRole == null) {
       userRole = new Role(RoleType.USER);
-      tutorRole = new Role(RoleType.TUTOR);
     }
 
     if (userRepository.findByEmail(registerDTO.getEmail()).isPresent() ||
@@ -84,7 +83,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
           "User already exists!");
     }
 
-    Set<Role> roles = new HashSet<>(Arrays.asList(userRole,tutorRole));
+    Set<Role> roles = new HashSet<>(Arrays.asList(userRole));
     User user = new User(registerDTO.getFullname(), registerDTO.getUsername(),
         registerDTO.getEmail(),
         passwordEncoder.encode(registerDTO.getPassword()), roles);
