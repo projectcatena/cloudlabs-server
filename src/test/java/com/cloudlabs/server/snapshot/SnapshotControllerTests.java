@@ -3,6 +3,8 @@ package com.cloudlabs.server.snapshot;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -101,8 +103,15 @@ public class SnapshotControllerTests {
         .andExpect(MockMvcResultMatchers.status().isOk());
 
         //userRepository.deleteByEmail("computetutor@gmail.com");
-        subnetRepository.deleteBySubnetName("test-subnet-snapshot");
-        subnetService.deleteSubnet("test-subnet-snapshot");
+        
+    }
+
+    @BeforeAll
+    void subnet_setup() {
+        SubnetDTO request = new SubnetDTO();
+        request.setSubnetName("test-subnet-snapshot");
+        request.setIpv4Range("10.254.3.0/24");
+        subnetService.createSubnet(request);
     }
 
     @BeforeEach
@@ -113,10 +122,14 @@ public class SnapshotControllerTests {
         User user = new User("Bobby", "tutor", "test@gmail.com", "Pa$$w0rd",
                 new HashSet<>(Arrays.asList(new Role(RoleType.TUTOR))));
         userRepository.save(user);
-        SubnetDTO request = new SubnetDTO();
-        request.setSubnetName("test-subnet-snapshot");
-        request.setIpv4Range("10.254.3.0/24");
-        subnetService.createSubnet(request);
+
+    }
+
+    @AfterAll
+    void teardown() throws Exception {
+        userRepository.deleteByEmail("test@gmail.com");
+        subnetRepository.deleteBySubnetName("test-subnet-snapshot");
+        subnetService.deleteSubnet("test-subnet-snapshot");
     }
     
     @Test

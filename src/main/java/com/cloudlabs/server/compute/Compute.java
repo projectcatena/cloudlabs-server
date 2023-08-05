@@ -34,10 +34,10 @@ public class Compute {
     @Column(name = "private_ip_address", nullable = false)
     private String privateIPv4Address;
 
-    @Column(name = "disk_size_in_GB", nullable = false)
+    @Column(name = "disk_size_in_GB", nullable = true)
     private long diskSizeGb;
 
-    @Column(name = "source_image", nullable = false)
+    @Column(name = "source_image", nullable = true)
     private String sourceImage;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
@@ -151,5 +151,5 @@ public class Compute {
     public void setSubnet(Subnet subnet) {
         this.subnet = subnet;
     }
-    
+
 }
