@@ -62,10 +62,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -254,11 +256,8 @@ public class ComputeServiceImpl implements ComputeService {
                     new HashSet<>(Arrays.asList(user)), subnet);
             computeRepository.save(compute);
 
-            Module module = moduleRepository.findByModuleId(moduleDTO.getModuleId());
-
-            if (module == null) {
-                return null;
-            }
+            Module module = moduleRepository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
             module.setComputes(new HashSet<>(Arrays.asList(compute)));
             moduleRepository.save(module);

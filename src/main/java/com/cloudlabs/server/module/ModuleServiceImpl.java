@@ -58,11 +58,8 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     public ModuleDTO getModuleById(Long moduleId) {
-        Module module = repository.findByModuleId(moduleId);
-        if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Module not found");
-        }
+        Module module = repository.findById(moduleId).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
         // Map Module entity to ModuleDTO
         ModuleDTO moduleDTO = new ModuleDTO();
@@ -102,11 +99,9 @@ public class ModuleServiceImpl implements ModuleService {
     public ModuleDTO deleteModule(Long moduleId)
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException {
-        Module module = repository.findByModuleId(moduleId);
-        if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Module not found");
-        }
+        Module module = repository.findById(moduleId).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
+
         repository.delete(module);
 
         ModuleDTO moduleDTO = new ModuleDTO();
@@ -119,15 +114,11 @@ public class ModuleServiceImpl implements ModuleService {
     public ModuleDTO updateModule(Long moduleId, ModuleDTO moduleDTO)
             throws InterruptedException, ExecutionException, TimeoutException,
             IOException {
-        Module module = repository.findByModuleId(moduleId);
+        Module module = repository.findById(moduleId).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
         String subtitle = moduleDTO.getModuleSubtitle();
         String title = moduleDTO.getModuleName();
         String description = moduleDTO.getModuleDescription();
-
-        if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Module not found");
-        }
 
         if (!subtitle.isBlank()) {
             module.setModuleSubtitle(subtitle);
@@ -151,12 +142,8 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     public ModuleDTO addModuleComputeInstance(ModuleDTO moduleDTO) {
-        Module module = repository.findByModuleId(moduleDTO.getModuleId());
-
-        if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Module not found");
-        }
+        Module module = repository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
         List<ComputeDTO> addedInstances = new ArrayList<>();
         Set<Compute> computes = new HashSet<>();
@@ -182,11 +169,8 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     public ModuleDTO addUsers(ModuleDTO moduleDTO) {
-        Module module = repository.findByModuleId(moduleDTO.getModuleId());
-
-        if (module == null) {
-            return null;
-        }
+        Module module = repository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
         List<UserDTO> addedUsers = new ArrayList<>();
         Set<User> users = new HashSet<>();
@@ -209,12 +193,8 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     public ModuleDTO removeModuleComputeInstance(ModuleDTO moduleDTO) {
-        Module module = repository.findByModuleId(moduleDTO.getModuleId());
-
-        if (module == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Module not found");
-        }
+        Module module = repository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
         Set<Compute> computes = module.getComputes();
         List<ComputeDTO> removedInstances = new ArrayList<>();
@@ -244,11 +224,9 @@ public class ModuleServiceImpl implements ModuleService {
 
     public ModuleDTO removeUsers(ModuleDTO moduleDTO) {
 
-        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+        Module module = repository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
-        if (module == null) {
-            return null;
-        }
         // Get list of users from entity
         Set<User> users = module.getUsers();
 
@@ -284,7 +262,8 @@ public class ModuleServiceImpl implements ModuleService {
      */
     @Override
     public List<UserDTO> listUsers(ModuleDTO moduleDTO) {
-        Module module = repository.findByModuleId(moduleDTO.getModuleId());
+        Module module = repository.findById(moduleDTO.getModuleId()).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
 
         List<UserDTO> userDTOs = module.getUsers()
                 .stream()
