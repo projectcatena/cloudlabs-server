@@ -128,7 +128,6 @@ public class SnapshotControllerTests {
     @AfterAll
     void teardown() throws Exception {
         userRepository.deleteByEmail("test@gmail.com");
-        subnetRepository.deleteBySubnetName("test-subnet-snapshot");
         subnetService.deleteSubnet("test-subnet-snapshot");
     }
     
