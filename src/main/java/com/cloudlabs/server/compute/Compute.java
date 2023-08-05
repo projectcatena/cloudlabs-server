@@ -135,7 +135,7 @@ public class Compute {
     public void setSourceImage(String sourceImage) {
         this.sourceImage = sourceImage;
     }
-    
+
     public Set<User> getUsers() {
         return users;
     }
@@ -151,4 +151,5 @@ public class Compute {
     public void setSubnet(Subnet subnet) {
         this.subnet = subnet;
     }
+    
 }
