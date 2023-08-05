@@ -1,5 +1,19 @@
 package com.cloudlabs.server.security.auth;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
@@ -9,18 +23,6 @@ import com.cloudlabs.server.security.auth.dto.RegisterDTO;
 import com.cloudlabs.server.security.jwt.JwtService;
 import com.cloudlabs.server.user.User;
 import com.cloudlabs.server.user.UserRepository;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -70,9 +72,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   @Override
   public AuthenticationResponseDTO register(RegisterDTO registerDTO) {
     Role userRole = roleRepository.findByName(RoleType.USER);
-
+    Role tutorRole = null;
     if (userRole == null) {
       userRole = new Role(RoleType.USER);
+      tutorRole = new Role(RoleType.TUTOR);
     }
 
     if (userRepository.findByEmail(registerDTO.getEmail()).isPresent() ||
@@ -81,7 +84,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
           "User already exists!");
     }
 
-    Set<Role> roles = new HashSet<>(Arrays.asList(userRole));
+    Set<Role> roles = new HashSet<>(Arrays.asList(userRole,tutorRole));
     User user = new User(registerDTO.getFullname(), registerDTO.getUsername(),
         registerDTO.getEmail(),
         passwordEncoder.encode(registerDTO.getPassword()), roles);

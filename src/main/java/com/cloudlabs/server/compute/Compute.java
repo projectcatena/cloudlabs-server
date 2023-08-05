@@ -1,9 +1,8 @@
 package com.cloudlabs.server.compute;
 
-import com.cloudlabs.server.subnet.Subnet;
-import com.cloudlabs.server.user.User;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,6 +14,9 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.user.User;
 
 @Entity
 @Table(name = "compute")
@@ -31,6 +33,12 @@ public class Compute {
 
     @Column(name = "private_ip_address", nullable = false)
     private String privateIPv4Address;
+
+    @Column(name = "disk_size_in_GB", nullable = false)
+    private long diskSizeGb;
+
+    @Column(name = "source_image", nullable = false)
+    private String sourceImage;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "computes_users", joinColumns = @JoinColumn(name = "compute_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "user_email", referencedColumnName = "email"))
@@ -59,10 +67,23 @@ public class Compute {
     }
 
     public Compute(String instanceName, String machineType,
-            String privateIPv4Address, Set<User> users, Subnet subnet) {
+            String privateIPv4Address,
+            Set<User> users, Subnet subnet) {
         this.instanceName = instanceName;
         this.machineType = machineType;
         this.privateIPv4Address = privateIPv4Address;
+        this.users = users;
+        this.subnet = subnet;
+    }
+
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, long diskSizeGb, String sourceImage,
+            Set<User> users, Subnet subnet) {
+        this.instanceName = instanceName;
+        this.machineType = machineType;
+        this.privateIPv4Address = privateIPv4Address;
+        this.diskSizeGb = diskSizeGb;
+        this.sourceImage = sourceImage;
         this.users = users;
         this.subnet = subnet;
     }
@@ -99,6 +120,22 @@ public class Compute {
         this.privateIPv4Address = privateIPv4Address;
     }
 
+    public long getDiskSizeGb() {
+        return this.diskSizeGb;
+    }
+
+    public void setDiskSizeGb(long diskSizeGb) {
+        this.diskSizeGb = diskSizeGb;
+    }
+
+    public String getSourceImage() {
+        return this.sourceImage;
+    }
+
+    public void setSourceImage(String sourceImage) {
+        this.sourceImage = sourceImage;
+    }
+    
     public Set<User> getUsers() {
         return users;
     }
