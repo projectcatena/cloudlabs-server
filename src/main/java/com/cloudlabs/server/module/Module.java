@@ -34,7 +34,7 @@ public class Module {
     @Column(name = "description", length = 1000, nullable = false)
     private String moduleDescription;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+    @OneToMany(fetch = FetchType.EAGER, cascade = { CascadeType.ALL })
     @JoinColumn(name = "module_id", referencedColumnName = "id")
     private Set<Compute> computes = new HashSet<>();
 
