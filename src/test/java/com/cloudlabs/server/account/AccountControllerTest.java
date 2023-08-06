@@ -12,10 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -49,7 +51,10 @@ public class AccountControllerTest {
         private RoleRepository roleRepository;
 
         @BeforeAll
-        void setup() {
+        void setup(@Autowired JdbcTemplate jdbcTemplate) throws Exception {
+                JdbcTestUtils.deleteFromTables(jdbcTemplate, "users_roles");
+                JdbcTestUtils.deleteFromTables(jdbcTemplate, "user_table");
+                JdbcTestUtils.deleteFromTables(jdbcTemplate, "roles");
                 Role role = roleRepository.findByName(RoleType.USER);
 
                 if (role == null) {
