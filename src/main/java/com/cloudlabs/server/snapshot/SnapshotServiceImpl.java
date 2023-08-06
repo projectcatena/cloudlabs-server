@@ -7,11 +7,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDisk.Type;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
@@ -27,10 +33,12 @@ import com.google.cloud.compute.v1.SnapshotsClient;
 public class SnapshotServiceImpl implements SnapshotService {
     
     // Project ID or project number of the Cloud project you want to use.
-    private final String projectId = "cloudlabs-387310";
+    @Value("${gcp.project.id}")
+    private String projectId;
 
     // The zone of the source disk from which you create the snapshot (for zonal disks).
-    private String zone = "asia-southeast1-b"; //asia-southeast1-b
+    @Value("${gcp.project.zone}")
+    private String zone; //asia-southeast1-b
 
     // The region of the source disk from which you create the snapshot (for regional disks).
     private String region = ""; //asia-southeast1
@@ -39,20 +47,23 @@ public class SnapshotServiceImpl implements SnapshotService {
     // want to store your snapshot.
     // You can specify only one storage location. Available locations:
     // https://cloud.google.com/storage/docs/locations#available-locations
-    private String location = "asia-southeast1";
+    @Value("${gcp.project.location}")
+    private String location;
 
     // Project ID or project number of the Cloud project that
     // hosts the disk you want to snapshot. If not provided, the value will be defaulted
     // to 'projectId' value.
-    private String diskProjectId = "snapshot-storage-1";
+    @Value("${gcp.disk.project}")
+    private String diskProjectId;
 
+    @Autowired
     private ComputeService computeService;
+
+    @Autowired
     private SnapshotRepository snapshotRepository;
 
-    public SnapshotServiceImpl(ComputeService computeService, SnapshotRepository snapshotRepository) {
-        this.computeService = computeService;
-        this.snapshotRepository = snapshotRepository;
-    }
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public SaveSnapshotDTO createSnapshot(String snapshotName, String diskName, String description)
@@ -116,7 +127,18 @@ public class SnapshotServiceImpl implements SnapshotService {
         Snapshot snapshot = snapshotsClient.get(projectId, snapshotName);
         System.out.println(String.format("Snapshot created: %s", snapshot.getName()));
 
-        SaveSnapshot saveSnapshot = new SaveSnapshot(snapshotName, description);
+        // Get current user from security context
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+        String email = authenticationToken.getName();
+        System.out.println(email);
+
+        // Find user by email
+        User user = userRepository.findByEmail(email).get();
+        System.out.println(user.getFullname());
+        SaveSnapshot saveSnapshot = new SaveSnapshot(snapshotName, description, user);
         snapshotRepository.save(saveSnapshot);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO(snapshotName, description, diskName)
@@ -158,11 +180,19 @@ public class SnapshotServiceImpl implements SnapshotService {
 
     @Override
     public List<SaveSnapshotDTO> listSnapshots() throws IOException { //String snapshotName
+        
+        // Get email from Jwt token using context
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        List<SaveSnapshot> snapshotList = snapshotRepository.findByUser_Email(email);
+
         List<SaveSnapshotDTO> saveSnapshotDtos = new ArrayList<>();
 
-        List<SaveSnapshot> saveSnapshot = snapshotRepository.findAll();
-
-        for (SaveSnapshot i : saveSnapshot) {
+        for (SaveSnapshot i : snapshotList) {
             SaveSnapshotDTO saveSnapshotDto = new SaveSnapshotDTO();
             saveSnapshotDto.setSnapshotName(i.getSnapshotName());
             saveSnapshotDto.setDescription(i.getDescription());

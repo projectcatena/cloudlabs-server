@@ -1,10 +1,9 @@
 package com.cloudlabs.server.user;
 
-import com.cloudlabs.server.role.Role;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,10 +14,15 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.snapshot.SaveSnapshot;
 
 @Entity
 @Table(name = "user_table") // should not use User or user as reserved keywords
@@ -42,6 +46,9 @@ public class User implements UserDetails {
   @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
   @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
   private Set<Role> roles;
+
+  @OneToMany(mappedBy = "user")
+  private Set<SaveSnapshot> snapshots;
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -146,4 +153,13 @@ public class User implements UserDetails {
   public void setRoles(Set<Role> roles) {
     this.roles = roles;
   }
+
+  public Set<SaveSnapshot> getSnapshots() {
+    return snapshots;
+  }
+
+  public void setSnapshots(Set<SaveSnapshot> snapshots) {
+    this.snapshots= snapshots;
+  }
+
 }

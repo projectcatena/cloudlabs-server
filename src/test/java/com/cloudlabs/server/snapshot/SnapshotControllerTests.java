@@ -189,7 +189,6 @@ public class SnapshotControllerTests {
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
-        // delete request
         this.mockMvc.perform(MockMvcRequestBuilders.post("/snapshot/create")
             .contentType(MediaType.APPLICATION_JSON)
             .content(jsonString))
