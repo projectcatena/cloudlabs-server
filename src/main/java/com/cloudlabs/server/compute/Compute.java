@@ -41,7 +41,7 @@ public class Compute {
     @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
     private Subnet subnet;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = { CascadeType.ALL })
+    @ManyToOne
     private Module module;
 
     public Compute() {

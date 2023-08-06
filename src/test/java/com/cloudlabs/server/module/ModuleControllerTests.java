@@ -497,11 +497,15 @@ public class ModuleControllerTests {
         ModuleDTO request = new ModuleDTO();
         request.setModuleId(module.getModuleId());
         request.setComputes(computeDTOs);
-
-        // Link instance with module
-        moduleService.addModuleComputeInstance(request);
-
+        
         String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/add-computes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
 
         this.mockMvc
                 .perform(MockMvcRequestBuilders.post("/Modules/remove-computes")
