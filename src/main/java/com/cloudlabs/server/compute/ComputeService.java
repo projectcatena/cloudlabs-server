@@ -28,7 +28,7 @@ public interface ComputeService {
 
     List<MachineTypeDTO> listMachineTypes(String query) throws IOException;
 
-    List<ComputeDTO> listComputeInstances();
+    List<ComputeDTO> listComputeInstances(Long moduleId);
 
     ComputeDTO getComputeInstance(String instanceName);
 

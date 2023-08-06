@@ -9,6 +9,9 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.module.Module;
+import com.cloudlabs.server.module.ModuleRepository;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
@@ -24,7 +27,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -69,6 +72,9 @@ public class ComputeControllerTests {
 
     @Autowired
     private SubnetService subnetService;
+
+    @Autowired
+    private ModuleRepository modulerRepository;
 
     // Mock auth services
 
@@ -117,9 +123,28 @@ public class ComputeControllerTests {
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createGetListThenDeleteComputeEngine_whenPublicImage() throws Exception {
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-public-image");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -144,7 +169,9 @@ public class ComputeControllerTests {
 
         // List
         this.mockMvc
-                .perform(MockMvcRequestBuilders.get("/compute/list")
+                .perform(MockMvcRequestBuilders
+                        .get(String.format("/compute/list?moduleId=%s",
+                                moduleCreateResponse.getModuleId()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isNotEmpty());
@@ -155,14 +182,39 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.delete(
+                        "/Modules/delete/{moduleId}", moduleCreateResponse.getModuleId()))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getComputeInstance_whenAuthenticatedAndAfterCreation() throws Exception {
+
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-get-image-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -199,15 +251,39 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createThenDeleteComputeEngine_whenCustomImage() throws Exception {
 
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-custom-image-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-custom-image");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("windows-server-2019");
@@ -235,16 +311,40 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createLimitThenDeleteComputeEngine_whenPublicImage() throws Exception {
 
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-create-limit-instance-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-limit-runtime-public-image");
         request.setStartupScript("");
         request.setMaxRunDuration(Long.valueOf(120));
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -274,6 +374,11 @@ public class ComputeControllerTests {
                 .perform(MockMvcRequestBuilders.post("/compute/delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
@@ -311,11 +416,28 @@ public class ComputeControllerTests {
     @Test
     void failCreateComputeEngine_whenIncorrectParametersGiven() throws Exception {
 
-        String randomInstanceName = RandomStringUtils.randomAlphanumeric(10);
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-fail-create-incorrect-params-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
 
         ComputeDTO request = new ComputeDTO();
-        request.setInstanceName(String.format("test-fail-%s", randomInstanceName));
+        request.setInstanceName("test-compute-fail-incorrect-params");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -338,9 +460,10 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        // The test will create a public IP address resource, so must delete
-        String ipAddressResourceName = String.format("%s-public-ip", request.getInstanceName());
-        computeService.releaseStaticExternalIPAddress(ipAddressResourceName);
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -378,9 +501,29 @@ public class ComputeControllerTests {
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getInstanceStatus_whenInstanceNameGiven() throws Exception {
+
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-get-instance-status-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-get-instance-status");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -418,14 +561,39 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void resetInstance_whenInstanceNameGiven() throws Exception {
+
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-reset-instance-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-reset-instance");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -463,46 +631,39 @@ public class ComputeControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
-    }
 
-    // @Test
-    // void stopInstance_whenInstanceNameGiven() throws Exception {
-    // ComputeDTO request = new ComputeDTO();
-    // request.setInstanceName("test-stop-instance");
-    // request.setStartupScript("");
-    //
-    // SourceImageDTO sourceImageDTO = new SourceImageDTO();
-    // sourceImageDTO.setName("debian-11");
-    // sourceImageDTO.setProject("debian-cloud");
-    // request.setSourceImage(sourceImageDTO);
-    //
-    // MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
-    // machineTypeDTO.setName("e2-micro");
-    // request.setMachineType(machineTypeDTO);
-    //
-    // String jsonString = objectMapper.writeValueAsString(request);
-    //
-    // this.mockMvc
-    // .perform(MockMvcRequestBuilders.post("/compute/create")
-    // .contentType(MediaType.APPLICATION_JSON)
-    // .content(jsonString))
-    // .andExpect(MockMvcResultMatchers.status().isOk());
-    //
-    // // Stop instance
-    // mockMvc
-    // .perform(MockMvcRequestBuilders.post("/compute/stop")
-    // .contentType(MediaType.APPLICATION_JSON)
-    // .content(jsonString))
-    // .andExpect(MockMvcResultMatchers.status().isOk())
-    // .andReturn();
-    // }
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
 
     @Test
     @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void stopThenStartAnInstance_whenInstanceNameGiven() throws Exception {
+
+        // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-stop-start-instance-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("test-stop-instance");
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("debian-11");
@@ -547,6 +708,11 @@ public class ComputeControllerTests {
                 .perform(MockMvcRequestBuilders.post("/compute/delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        mockMvc
+                .perform(MockMvcRequestBuilders.delete(String.format(
+                        "/Modules/delete/%s", moduleCreateResponse.getModuleId())))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
@@ -596,7 +762,15 @@ public class ComputeControllerTests {
         // Create an entry in database will do, as this doesn't need GCP to test
         Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
         subnetRepository.save(subnet);
+
+        Module module = new Module("test-add-users-compute-module", "test-subtitle",
+                "test-description");
+        modulerRepository.save(module);
+
         Compute compute = new Compute("mock-entry", "e2-micro", "10.10.1.1", null, subnet);
+        computeRepository.save(compute);
+
+        compute.setModule(module);
         computeRepository.save(compute);
 
         // Create new test user
@@ -614,6 +788,10 @@ public class ComputeControllerTests {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("mock-entry");
         request.setUsers(userDTOs);
+
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleId(compute.getModule().getModuleId());
+        request.setModule(moduleDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -633,6 +811,7 @@ public class ComputeControllerTests {
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
         subnetRepository.deleteBySubnetName("test-subnet");
+        modulerRepository.deleteById(request.getModule().getModuleId());
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 
@@ -651,8 +830,16 @@ public class ComputeControllerTests {
         // Create an entry in database will do, as this doesn't need GCP to test
         Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
         subnetRepository.save(subnet);
+
+        Module module = new Module("test-remove-users-compute-module",
+                "test-subtitle", "test-description");
+        modulerRepository.save(module);
+
         Compute compute = new Compute("mock-entry-remove", "e2-micro", "10.10.1.1",
                 users, subnet);
+        computeRepository.save(compute);
+
+        compute.setModule(module);
         computeRepository.save(compute);
 
         assertNotNull(computeRepository.findByUsers_EmailAndInstanceName(
@@ -665,6 +852,10 @@ public class ComputeControllerTests {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName("mock-entry-remove");
         request.setUsers(userDTOs);
+
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleId(compute.getModule().getModuleId());
+        request.setModule(moduleDTO);
 
         String jsonString = objectMapper.writeValueAsString(request);
 
@@ -684,6 +875,7 @@ public class ComputeControllerTests {
         // created
         computeRepository.deleteByInstanceName(request.getInstanceName());
         subnetRepository.deleteBySubnetName("test-subnet");
+        modulerRepository.deleteById(request.getModule().getModuleId());
         userRepository.deleteByEmail(userDTO.getEmail());
     }
 }

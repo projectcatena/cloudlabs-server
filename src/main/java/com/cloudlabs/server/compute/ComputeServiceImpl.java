@@ -4,6 +4,9 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.module.Module;
+import com.cloudlabs.server.module.ModuleRepository;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
@@ -58,10 +61,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -91,6 +96,9 @@ public class ComputeServiceImpl implements ComputeService {
 
     @Autowired
     private SubnetRepository subnetRepository;
+
+    @Autowired
+    private ModuleRepository moduleRepository;
 
     @Override
     public ComputeDTO createPrivateInstance(ComputeDTO computeInstanceMetadata) {
@@ -138,10 +146,52 @@ public class ComputeServiceImpl implements ComputeService {
             String subnetName = computeInstanceMetadata.getAddress().getSubnetName();
             String startupScript = computeInstanceMetadata.getStartupScript();
             Long maxRunDuration = computeInstanceMetadata.getMaxRunDuration();
+            ModuleDTO moduleDTO = computeInstanceMetadata.getModule();
 
             if (startupScript == null) {
                 startupScript = "";
             }
+
+            if (moduleDTO == null || moduleDTO.getModuleId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A module Id must be specifed");
+            }
+
+            // Minimum of 120 seconds otherwise instance fail to start
+            if (maxRunDuration != null) {
+                if (maxRunDuration < 120) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Minimum limit runtime duration is 120 seconds");
+                }
+            }
+
+            // Retrive from DB to ensure data availability (validate first before
+            // create on GCP) Get current user from security context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+
+            // Find user by email
+            User user = userRepository.findByEmail(email).orElseThrow(
+                    () -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Unrecoverable error, user not found"));
+
+            // Find subnet by subnet name
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+
+            if (subnet == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Subnet does not exist");
+            }
+
+            Module module = moduleRepository.findById(moduleDTO.getModuleId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Module not found"));
+            ;
 
             // Instance creation requires at least one persistent disk and one network
             // interface.
@@ -155,15 +205,6 @@ public class ComputeServiceImpl implements ComputeService {
                             .setDiskSizeGb(diskSizeGb)
                             .build())
                     .build();
-
-            // Reserve Public IP Address for the instance
-            // String addressResourceName = String.format("%s-public-ip",
-            // instanceName); reserveStaticExternalIPAddress(addressResourceName);
-
-            // Assign created public IP at instance creation
-            // AccessConfig addPublicIpAddressConfig = AccessConfig.newBuilder()
-            // .setNatIP(publicIPAddressDTO.getIpv4Address())
-            // .build();
 
             // Use the network interface provided in the networkName argument.
             NetworkInterface networkInterface = NetworkInterface.newBuilder()
@@ -200,9 +241,6 @@ public class ComputeServiceImpl implements ComputeService {
                     .addNetworkInterfaces(networkInterface)
                     .build();
 
-            // System.out.printf("Creating instance: %s at %s %n", instanceName,
-            // zone);
-
             // Insert the instance in the specified project and zone.
             InsertInstanceRequest insertInstanceRequest = InsertInstanceRequest.newBuilder()
                     .setProject(project)
@@ -226,19 +264,6 @@ public class ComputeServiceImpl implements ComputeService {
             responseComputeDTO.setInstanceName(instanceName);
             responseComputeDTO.setAddress(addressDTO);
 
-            // Get current user from security context
-            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication();
-
-            String email = authenticationToken.getName();
-
-            // Find user by email
-            User user = userRepository.findByEmail(email).get();
-
-            // Find subnet by subnet name
-            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
-
             // Successful Instance Creation, save Compute and Current User to
             // Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
@@ -246,8 +271,11 @@ public class ComputeServiceImpl implements ComputeService {
                     new HashSet<>(Arrays.asList(user)), subnet);
             computeRepository.save(compute);
 
+            module.setComputes(new HashSet<>(Arrays.asList(compute)));
+            moduleRepository.save(module);
+
             // Minimum of 120 seconds otherwise instance fail to start
-            if (!(maxRunDuration == null || maxRunDuration < 120)) {
+            if (maxRunDuration != null) {
                 // Then, set limit runtime
                 ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(instanceName, maxRunDuration);
                 responseComputeDTO.setMaxRunDuration(
@@ -279,10 +307,18 @@ public class ComputeServiceImpl implements ComputeService {
             Operation response = operation.get(3, TimeUnit.MINUTES);
 
             if (response.hasError()) {
-                return null;
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Deletion from GCP has failed unrecoverably.");
             }
 
-            computeRepository.deleteByInstanceName(instanceName);
+            Long deletionCount = computeRepository.deleteByInstanceName(instanceName);
+
+            if (deletionCount == 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Deletion from database has failed unrecoverably.");
+            }
 
             ComputeDTO computeDTO = new ComputeDTO();
             computeDTO.setInstanceName(instanceName);
@@ -430,7 +466,7 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public List<ComputeDTO> listComputeInstances() {
+    public List<ComputeDTO> listComputeInstances(Long moduleId) {
 
         // Get email from Jwt token using context
         UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
@@ -439,7 +475,9 @@ public class ComputeServiceImpl implements ComputeService {
 
         String email = authenticationToken.getName();
 
-        List<Compute> computeInstances = computeRepository.findByUsers_Email(email);
+        List<Compute> computeInstances = (moduleId == null)
+                ? computeRepository.findByUsers_Email(email)
+                : computeRepository.findByUsers_EmailAndModuleId(email, moduleId);
 
         List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
 

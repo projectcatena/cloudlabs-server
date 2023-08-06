@@ -1,5 +1,6 @@
 package com.cloudlabs.server.compute;
 
+import com.cloudlabs.server.module.Module;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.user.User;
 import java.util.HashSet;
@@ -23,13 +24,13 @@ public class Compute {
     @GeneratedValue
     private long id;
 
-    @Column(name = "instance_name", nullable = false)
+    @Column(name = "instance_name", nullable = false, unique = true)
     private String instanceName;
 
     @Column(name = "machine_type", nullable = false)
     private String machineType;
 
-    @Column(name = "private_ip_address", nullable = false)
+    @Column(name = "private_ip_address", nullable = false, unique = true)
     private String privateIPv4Address;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
@@ -39,6 +40,9 @@ public class Compute {
     @ManyToOne
     @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
     private Subnet subnet;
+
+    @ManyToOne
+    private Module module;
 
     public Compute() {
     }
@@ -65,6 +69,17 @@ public class Compute {
         this.privateIPv4Address = privateIPv4Address;
         this.users = users;
         this.subnet = subnet;
+    }
+
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, Set<User> users, Subnet subnet,
+            Module module) {
+        this.instanceName = instanceName;
+        this.machineType = machineType;
+        this.privateIPv4Address = privateIPv4Address;
+        this.users = users;
+        this.subnet = subnet;
+        this.module = module;
     }
 
     public long getId() {
@@ -113,5 +128,13 @@ public class Compute {
 
     public void setSubnet(Subnet subnet) {
         this.subnet = subnet;
+    }
+
+    public Module getModule() {
+        return module;
+    }
+
+    public void setModule(Module module) {
+        this.module = module;
     }
 }
