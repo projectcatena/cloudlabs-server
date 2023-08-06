@@ -40,9 +40,9 @@ public class AccountControllerTest {
                 passwordEncoder.encode("Pa$$w0rd"));
         userRepository.save(mock_user);
 
-        Long id = Long.valueOf(1);
-
-        this.mockMvc.perform(MockMvcRequestBuilders.get("/account/get/" + id))
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.get("/account/get/" + mock_user.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
