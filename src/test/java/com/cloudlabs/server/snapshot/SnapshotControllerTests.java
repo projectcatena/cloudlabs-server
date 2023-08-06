@@ -27,6 +27,8 @@ import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
 import com.cloudlabs.server.compute.dto.SourceImageDTO;
+import com.cloudlabs.server.module.ModuleRepository;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.role.Role;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
@@ -57,10 +59,35 @@ public class SnapshotControllerTests {
     @Autowired
     private SubnetRepository subnetRepository;
 
-    ComputeDTO createInstance(String instanceName) throws Exception {
+    @Autowired
+    private ModuleRepository moduleRepository;
+
+    ModuleDTO createModule() throws Exception {
+                // Create module (required as need associate compute with module)
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleName("test-module");
+        moduleDTO.setModuleSubtitle("test-subtitle");
+        moduleDTO.setModuleDescription("test-description");
+
+        String moduleJsonString = objectMapper.writeValueAsString(moduleDTO);
+
+        MvcResult moduleCreateResult = mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moduleJsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        ModuleDTO moduleCreateResponse = objectMapper.readValue(
+                moduleCreateResult.getResponse().getContentAsString(), ModuleDTO.class);
+
+        return moduleCreateResponse;
+    }
+    ComputeDTO createInstance(String instanceName, ModuleDTO moduleCreateResponse) throws Exception {
         ComputeDTO request = new ComputeDTO();
         request.setInstanceName(instanceName);
         request.setStartupScript("");
+        request.setModule(moduleCreateResponse);
 
         SourceImageDTO sourceImageDTO = new SourceImageDTO();
         sourceImageDTO.setName("windows-server-2019");
@@ -134,7 +161,8 @@ public class SnapshotControllerTests {
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createSnapshot() throws Exception {
-        ComputeDTO response = createInstance("test-instance-for-create-snapshot-success");
+        ModuleDTO moduleResponse = createModule();
+        ComputeDTO response = createInstance("test-instance-for-create-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-1-success",
         "", response.getInstanceName());
@@ -147,13 +175,20 @@ public class SnapshotControllerTests {
             .andExpect(MockMvcResultMatchers.status().isOk());
         
         deleteAfterUse(jsonString, response);
+
+        // delete module after done
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete(String.format(
+                    "/Modules/delete/%s", moduleResponse.getModuleId())))
+            .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteSnapshot() throws Exception {
+        ModuleDTO moduleResponse = createModule();
         // create the instance
-        ComputeDTO response = createInstance("test-instance-for-delete-snapshot-success");
+        ComputeDTO response = createInstance("test-instance-for-delete-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-2-success",
         "", response.getInstanceName());
@@ -176,13 +211,20 @@ public class SnapshotControllerTests {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(response)))
         .andExpect(MockMvcResultMatchers.status().isOk());
+        
+        // delete module after done
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete(String.format(
+                    "/Modules/delete/%s", moduleResponse.getModuleId())))
+            .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void listSnapshots() throws Exception {
+        ModuleDTO moduleResponse = createModule();
         // create the instance
-        ComputeDTO response = createInstance("test-instance-for-list-snapshot");
+        ComputeDTO response = createInstance("test-instance-for-list-snapshot", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-0",
         "", response.getInstanceName());
@@ -198,13 +240,20 @@ public class SnapshotControllerTests {
             .andExpect(MockMvcResultMatchers.status().isOk());
         
         deleteAfterUse(jsonString, response);
+
+        // delete module after done
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete(String.format(
+                    "/Modules/delete/%s", moduleResponse.getModuleId())))
+            .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotExists() throws Exception {
+        ModuleDTO moduleResponse = createModule();
         // create the instance
-        ComputeDTO response = createInstance("test-instance-for-revert-snapshot-success");
+        ComputeDTO response = createInstance("test-instance-for-revert-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-3-success",
         "", response.getInstanceName());
@@ -223,13 +272,20 @@ public class SnapshotControllerTests {
             .andExpect(MockMvcResultMatchers.status().isOk());
         
         deleteAfterUse(jsonString, response);
+
+        // delete module after done
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete(String.format(
+                    "/Modules/delete/%s", moduleResponse.getModuleId())))
+            .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
     @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotDoesNotExist() throws Exception {
+        ModuleDTO moduleResponse = createModule();
         // create the instance
-        ComputeDTO response = createInstance("test-instance-for-revert-snapshot-failure");
+        ComputeDTO response = createInstance("test-instance-for-revert-snapshot-failure", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-3-failure",
         "", response.getInstanceName());
@@ -241,6 +297,12 @@ public class SnapshotControllerTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
+
+        // delete module after done
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete(String.format(
+                    "/Modules/delete/%s", moduleResponse.getModuleId())))
+            .andExpect(MockMvcResultMatchers.status().isOk());
         
     }
 }
