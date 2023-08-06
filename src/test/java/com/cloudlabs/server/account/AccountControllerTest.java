@@ -1,10 +1,10 @@
 package com.cloudlabs.server.account;
 
-import com.cloudlabs.server.security.auth.dto.LoginDTO;
-import com.cloudlabs.server.user.User;
-import com.cloudlabs.server.user.UserRepository;
-import com.cloudlabs.server.user.dto.UserDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -13,68 +13,99 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
+import com.cloudlabs.server.role.RoleType;
+import com.cloudlabs.server.security.auth.dto.LoginDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.dto.UserDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @TestInstance(Lifecycle.PER_CLASS)
 @WithMockUser(username = "tester", roles = { "USER" })
 public class AccountControllerTest {
-    @Autowired
-    protected MockMvc mockMvc;
+        @Autowired
+        protected MockMvc mockMvc;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+        private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+        @Autowired
+        private PasswordEncoder passwordEncoder;
 
-    @Test
-    void retrieveUserDetails() throws Exception {
-        User mock_user = new User("tester", "tester", "tester@gmail.com",
-                passwordEncoder.encode("Pa$$w0rd"));
-        userRepository.save(mock_user);
+        @Autowired
+        private RoleRepository roleRepository;
 
-        Long id = Long.valueOf(1);
+        @BeforeAll
+        void setup() {
+                Role role = roleRepository.findByName(RoleType.USER);
 
-        this.mockMvc.perform(MockMvcRequestBuilders.get("/account/get/" + id))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
+                if (role == null) {
+                        role = new Role(RoleType.USER);
+                }
 
-    @Test
-    void updateUserDetails() throws Exception {
-        User mock_user = new User("tester2", "tester2", "tester2@gmail.com",
-                passwordEncoder.encode("Pa$$w0rd"));
-        userRepository.save(mock_user);
+                Set<Role> roles = new HashSet<>();
+                roles.add(role);
 
-        UserDTO userDTO = new UserDTO();
-        userDTO.setFullname("test2");
-        userDTO.setUsername("test2");
-        userDTO.setEmail("tester2@gmail.com");
-        userDTO.setCurrentPassword("Pa$$w0rd");
-        userDTO.setNewPassword("Test@123");
+                User mock_user = new User("tester", "tester", "tester@gmail.com",
+                        passwordEncoder.encode("Pa$$w0rd"));
+                mock_user.setRoles(roles);
+                userRepository.save(mock_user);
+        }
 
-        String jsonString = objectMapper.writeValueAsString(userDTO);
+        @AfterAll
+        void teardown() {
+                userRepository.deleteByEmail("tester@gmail.com");
+                roleRepository.delete(new Role(RoleType.USER));
+        }
 
-        this.mockMvc
-                .perform(MockMvcRequestBuilders.post("/account/update")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        @Test
+        @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+        void retrieveUserDetails() throws Exception {
+                User user = userRepository.findByEmail("tester@gmail.com").get();
 
-        LoginDTO loginDTO = new LoginDTO("tester2@gmail.com", "Test@123");
+                this.mockMvc.perform(MockMvcRequestBuilders.get("/user/" + user.getId()))
+                        .andExpect(MockMvcResultMatchers.status().isOk());
+        }
 
-        String loginJsonString = objectMapper.writeValueAsString(loginDTO);
+        @Test
+        @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+        void updateUserDetails() throws Exception {
+                UserDTO userDTO = new UserDTO();
+                userDTO.setFullname("test2");
+                userDTO.setUsername("test2");
+                userDTO.setEmail("tester@gmail.com");
+                userDTO.setCurrentPassword("Pa$$w0rd");
+                userDTO.setNewPassword("Test@123");
 
-        this.mockMvc
-                .perform(MockMvcRequestBuilders.post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginJsonString))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-    }
+                String jsonString = objectMapper.writeValueAsString(userDTO);
+
+                this.mockMvc
+                        .perform(MockMvcRequestBuilders.post("/user/update")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonString))
+                        .andExpect(MockMvcResultMatchers.status().isOk());
+
+                LoginDTO loginDTO = new LoginDTO("tester@gmail.com", "Test@123");
+
+                String loginJsonString = objectMapper.writeValueAsString(loginDTO);
+
+                this.mockMvc
+                        .perform(MockMvcRequestBuilders.post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(loginJsonString))
+                        .andExpect(MockMvcResultMatchers.status().isOk());
+        }
 }
