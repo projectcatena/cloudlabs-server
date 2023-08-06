@@ -2,7 +2,9 @@ package com.cloudlabs.server.authentication;
 
 import com.cloudlabs.server.security.auth.dto.LoginDTO;
 import com.cloudlabs.server.security.auth.dto.RegisterDTO;
+import com.cloudlabs.server.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -23,6 +25,9 @@ public class AuthenticationControllerTests {
     @Autowired
     protected MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeAll
@@ -37,6 +42,11 @@ public class AuthenticationControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @AfterAll
+    void teardown() throws Exception {
+        userRepository.deleteByEmail("john_pork@testmain.com");
     }
 
     @Test
