@@ -74,8 +74,8 @@ public class ComputeController {
 			throws InterruptedException, ExecutionException, TimeoutException,
 			IOException {
 		ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
-		computeService.releaseStaticExternalIPAddress(
-				String.format("%s-public-ip", response.getInstanceName()));
+		// computeService.releaseStaticExternalIPAddress(
+		// String.format("%s-public-ip", response.getInstanceName()));
 
 		return response;
 	}

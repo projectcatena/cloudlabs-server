@@ -13,9 +13,10 @@ public interface ComputeRepository extends JpaRepository<Compute, Long> {
   List<Compute> findByUsers_EmailAndModuleId(String email, Long moduleId);
 
   Optional<Compute> findByUsers_EmailAndInstanceName(String email,
-                                                     String instanceName);
+      String instanceName);
 
   // Will issue select query first, then delete, so need Transactional
   // annotation
-  @Transactional void deleteByInstanceName(String instanceName);
+  @Transactional
+  Long deleteByInstanceName(String instanceName);
 }
