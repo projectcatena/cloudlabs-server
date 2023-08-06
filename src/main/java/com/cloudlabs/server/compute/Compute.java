@@ -1,8 +1,10 @@
 package com.cloudlabs.server.compute;
 
+import com.cloudlabs.server.module.Module;
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.user.User;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,9 +17,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.cloudlabs.server.subnet.Subnet;
-import com.cloudlabs.server.user.User;
-
 @Entity
 @Table(name = "compute")
 public class Compute {
@@ -25,13 +24,13 @@ public class Compute {
     @GeneratedValue
     private long id;
 
-    @Column(name = "instance_name", nullable = false)
+    @Column(name = "instance_name", nullable = false, unique = true)
     private String instanceName;
 
     @Column(name = "machine_type", nullable = false)
     private String machineType;
 
-    @Column(name = "private_ip_address", nullable = false)
+    @Column(name = "private_ip_address", nullable = false, unique = true)
     private String privateIPv4Address;
 
     @Column(name = "disk_size_in_GB", nullable = true)
@@ -47,6 +46,9 @@ public class Compute {
     @ManyToOne
     @JoinColumn(name = "subnet_id", referencedColumnName = "id", nullable = false)
     private Subnet subnet;
+
+    @ManyToOne
+    private Module module;
 
     public Compute() {
     }
@@ -67,8 +69,7 @@ public class Compute {
     }
 
     public Compute(String instanceName, String machineType,
-            String privateIPv4Address,
-            Set<User> users, Subnet subnet) {
+            String privateIPv4Address, Set<User> users, Subnet subnet) {
         this.instanceName = instanceName;
         this.machineType = machineType;
         this.privateIPv4Address = privateIPv4Address;
@@ -86,6 +87,17 @@ public class Compute {
         this.sourceImage = sourceImage;
         this.users = users;
         this.subnet = subnet;
+    }
+
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, Set<User> users, Subnet subnet,
+            Module module) {
+        this.instanceName = instanceName;
+        this.machineType = machineType;
+        this.privateIPv4Address = privateIPv4Address;
+        this.users = users;
+        this.subnet = subnet;
+        this.module = module;
     }
 
     public long getId() {
@@ -152,4 +164,11 @@ public class Compute {
         this.subnet = subnet;
     }
 
+    public Module getModule() {
+        return module;
+    }
+
+    public void setModule(Module module) {
+        this.module = module;
+    }
 }
