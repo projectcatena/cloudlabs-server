@@ -10,7 +10,7 @@ import java.util.List;
 // Ignore null fields, and default values (like 0 for long type)
 public class ModuleDTO {
 
-    private Long moduleId;
+    private Long id;
     private String moduleSubtitle;
     private String moduleName;
     private String moduleDescription;
@@ -21,11 +21,11 @@ public class ModuleDTO {
     };
 
     public Long getModuleId() {
-        return this.moduleId;
+        return this.id;
     }
 
-    public void setModuleId(Long moduleId) {
-        this.moduleId = moduleId;
+    public void setModuleId(Long id) {
+        this.id = id;
     }
 
     public String getModuleSubtitle() {

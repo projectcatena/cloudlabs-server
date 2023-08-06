@@ -54,9 +54,9 @@ public class ComputeController {
 	}
 
 	@GetMapping("/list")
-	public List<ComputeDTO> listComputeInstances() {
+	public List<ComputeDTO> listComputeInstances(@RequestParam Long moduleId) {
 
-		List<ComputeDTO> response = computeService.listComputeInstances();
+		List<ComputeDTO> response = computeService.listComputeInstances(moduleId);
 
 		return response;
 	}
@@ -76,8 +76,8 @@ public class ComputeController {
 			throws InterruptedException, ExecutionException, TimeoutException,
 			IOException {
 		ComputeDTO response = computeService.deleteInstance(computeDTO.getInstanceName());
-		computeService.releaseStaticExternalIPAddress(
-				String.format("%s-public-ip", response.getInstanceName()));
+		// computeService.releaseStaticExternalIPAddress(
+		// String.format("%s-public-ip", response.getInstanceName()));
 
 		return response;
 	}

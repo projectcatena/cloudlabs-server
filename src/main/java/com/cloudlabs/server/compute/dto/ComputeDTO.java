@@ -1,5 +1,6 @@
 package com.cloudlabs.server.compute.dto;
 
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.user.dto.UserDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -18,6 +19,7 @@ public class ComputeDTO {
     private String status;
     private List<UserDTO> users;
     private Long maxRunDuration;
+    private ModuleDTO module;
 
     public ComputeDTO() {
     }
@@ -100,5 +102,13 @@ public class ComputeDTO {
 
     public void setMaxRunDuration(Long maxRunDuration) {
         this.maxRunDuration = maxRunDuration;
+    }
+
+    public ModuleDTO getModule() {
+        return module;
+    }
+
+    public void setModule(ModuleDTO module) {
+        this.module = module;
     }
 }
