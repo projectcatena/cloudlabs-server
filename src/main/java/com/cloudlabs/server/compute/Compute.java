@@ -33,6 +33,12 @@ public class Compute {
     @Column(name = "private_ip_address", nullable = false, unique = true)
     private String privateIPv4Address;
 
+    @Column(name = "disk_size_in_GB", nullable = true)
+    private long diskSizeGb;
+
+    @Column(name = "source_image", nullable = true)
+    private String sourceImage;
+
     @ManyToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "computes_users", joinColumns = @JoinColumn(name = "compute_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "user_email", referencedColumnName = "email"))
     private Set<User> users = new HashSet<>();
@@ -67,6 +73,18 @@ public class Compute {
         this.instanceName = instanceName;
         this.machineType = machineType;
         this.privateIPv4Address = privateIPv4Address;
+        this.users = users;
+        this.subnet = subnet;
+    }
+
+    public Compute(String instanceName, String machineType,
+            String privateIPv4Address, long diskSizeGb, String sourceImage,
+            Set<User> users, Subnet subnet) {
+        this.instanceName = instanceName;
+        this.machineType = machineType;
+        this.privateIPv4Address = privateIPv4Address;
+        this.diskSizeGb = diskSizeGb;
+        this.sourceImage = sourceImage;
         this.users = users;
         this.subnet = subnet;
     }
@@ -112,6 +130,22 @@ public class Compute {
 
     public void setPrivateIPv4Address(String privateIPv4Address) {
         this.privateIPv4Address = privateIPv4Address;
+    }
+
+    public long getDiskSizeGb() {
+        return this.diskSizeGb;
+    }
+
+    public void setDiskSizeGb(long diskSizeGb) {
+        this.diskSizeGb = diskSizeGb;
+    }
+
+    public String getSourceImage() {
+        return this.sourceImage;
+    }
+
+    public void setSourceImage(String sourceImage) {
+        this.sourceImage = sourceImage;
     }
 
     public Set<User> getUsers() {

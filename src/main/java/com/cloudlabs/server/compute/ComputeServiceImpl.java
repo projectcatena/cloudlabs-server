@@ -1,5 +1,29 @@
 package com.cloudlabs.server.compute;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
@@ -45,28 +69,6 @@ import com.google.cloud.compute.v1.ServiceAccount;
 import com.google.cloud.compute.v1.StartInstanceRequest;
 import com.google.cloud.compute.v1.StopInstanceRequest;
 import com.google.cloud.compute.v1.ZoneOperationsClient;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ComputeServiceImpl implements ComputeService {
@@ -191,7 +193,6 @@ public class ComputeServiceImpl implements ComputeService {
             Module module = moduleRepository.findById(moduleDTO.getModuleId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Module not found"));
-            ;
 
             // Instance creation requires at least one persistent disk and one network
             // interface.
@@ -268,11 +269,210 @@ public class ComputeServiceImpl implements ComputeService {
             // Database
             Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
                     addressDTO.getPrivateIPv4Address(),
-                    new HashSet<>(Arrays.asList(user)), subnet);
+                    diskSizeGb, sourceImage, null, subnet);
+
+            Set<User> users = new HashSet<User>();
+            users.add(user);
+
+            compute.setUsers(users);
+            compute.setModule(module);
             computeRepository.save(compute);
 
-            module.setComputes(new HashSet<>(Arrays.asList(compute)));
-            moduleRepository.save(module);
+            // Minimum of 120 seconds otherwise instance fail to start
+            if (!(maxRunDuration == null || maxRunDuration < 120)) {
+                // Then, set limit runtime
+                ComputeDTO limitRuntimeResponseDTO = limitComputeRuntime(instanceName, maxRunDuration);
+                responseComputeDTO.setMaxRunDuration(
+                        limitRuntimeResponseDTO.getMaxRunDuration());
+            }
+
+            return responseComputeDTO;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public ComputeDTO createPrivateInstance(ComputeDTO computeInstanceMetadata,
+            AttachedDisk disk) {
+        // Initialize client that will be used to send requests. This client only
+        // needs to be created once, and can be reused for multiple requests. After
+        // completing all of your requests, call the `instancesClient.close()`
+        // method on the client to safely clean up any remaining background
+        // resources.
+        try (InstancesClient instancesClient = InstancesClient.create()) {
+            // Below are sample values that can be replaced.
+            // machineType: machine type of the VM being created.
+            // * This value uses the format zones/{zone}/machineTypes/{type_name}.
+            // * For a list of machine types, see
+            // https://cloud.google.com/compute/docs/machine-types
+            // sourceImage: path to the operating system image to mount.
+            // * For details about images you can mount, see
+            // https://cloud.google.com/compute/docs/images
+            // diskSizeGb: storage size of the boot disk to attach to the instance.
+            // networkName: network interface to associate with the instance.
+            computeInstanceMetadata.setDiskSizeGb(60); // 60GB minimum for Windows
+            computeInstanceMetadata.setNetworkName("default");
+
+            MachineTypeDTO machineTypeDTO = computeInstanceMetadata.getMachineType();
+            machineTypeDTO.setZone(zone);
+            String machineType = String.format("zones/%s/machineTypes/%s", machineTypeDTO.getZone(),
+                    machineTypeDTO.getName());
+
+            SourceImageDTO sourceImageDTO = computeInstanceMetadata.getSourceImage();
+
+            String sourceImage;
+
+            if (sourceImageDTO.getProject() == null) {
+                // projects/cloudlabs-387310/global/images/windows-server-2019
+                sourceImage = String.format("projects/%s/global/images/%s", project,
+                        sourceImageDTO.getName());
+            } else {
+                sourceImage = String.format("projects/%s/global/images/family/%s",
+                        sourceImageDTO.getProject(),
+                        sourceImageDTO.getName());
+            }
+
+            long diskSizeGb = computeInstanceMetadata.getDiskSizeGb();
+            String networkName = computeInstanceMetadata.getNetworkName();
+            String instanceName = computeInstanceMetadata.getInstanceName();
+            String subnetName = computeInstanceMetadata.getAddress().getSubnetName();
+            String startupScript = computeInstanceMetadata.getStartupScript();
+            Long maxRunDuration = computeInstanceMetadata.getMaxRunDuration();
+            ModuleDTO moduleDTO = computeInstanceMetadata.getModule();
+
+            if (startupScript == null) {
+                startupScript = "";
+            }
+
+            if (moduleDTO == null || moduleDTO.getModuleId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A module Id must be specifed");
+            }
+
+            // Minimum of 120 seconds otherwise instance fail to start
+            if (maxRunDuration != null) {
+                if (maxRunDuration < 120) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Minimum limit runtime duration is 120 seconds");
+                }
+            }
+
+            Module module = moduleRepository.findById(moduleDTO.getModuleId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Module not found"));
+
+            // Retrive from DB to ensure data availability (validate first before
+            // create on GCP) Get current user from security context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+
+            // Find user by email
+            User user = userRepository.findByEmail(email).orElseThrow(
+                    () -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "Unrecoverable error, user not found"));
+
+            // Find subnet by subnet name
+            Subnet subnet = subnetRepository.findBySubnetName(subnetName);
+
+            if (subnet == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Subnet does not exist");
+            }
+
+            // Instance creation requires at least one persistent disk and one network
+            // interface.
+            Vector<AttachedDisk> disks = new Vector<>();
+            disks.add(disk);
+
+            // Reserve Public IP Address for the instance
+            // String addressResourceName = String.format("%s-public-ip",
+            // instanceName); reserveStaticExternalIPAddress(addressResourceName);
+
+            // Assign created public IP at instance creation
+            // AccessConfig addPublicIpAddressConfig = AccessConfig.newBuilder()
+            // .setNatIP(publicIPAddressDTO.getIpv4Address())
+            // .build();
+
+            // Use the network interface provided in the networkName argument.
+            NetworkInterface networkInterface = NetworkInterface.newBuilder()
+                    .setName(networkName)
+                    .setNetwork(String.format("projects/%s/global/networks/%s",
+                            project, vpc)) // VPC name
+                    .setSubnetwork(String.format(
+                            "projects/%s/regions/%s/subnetworks/%s", project, region,
+                            subnetName)) // Subnet resource name
+                    // .addAccessConfigs(addPublicIpAddressConfig)
+                    .build();
+
+            ServiceAccount serviceAccount = ServiceAccount.newBuilder()
+                    .setEmail("default")
+                    .addScopes("https://www.googleapis.com/auth/devstorage.read_only")
+                    .build();
+
+            // Startup script for the instance
+            Items items = Items.newBuilder()
+                    .setKey("startup-script")
+                    .setValue(startupScript) // Authenticated or gsutil URL
+                    .build();
+
+            Metadata metadata = Metadata.newBuilder().addItems(items).build();
+
+            // Bind `instanceName`, `machineType`, `disk`, and `networkInterface` to
+            // an instance.
+            Instance instanceResource = Instance.newBuilder()
+                    .setName(instanceName)
+                    .setMachineType(machineType)
+                    .setMetadata(metadata)
+                    .addServiceAccounts(serviceAccount)
+                    .addAllDisks(disks)
+                    .addNetworkInterfaces(networkInterface)
+                    .build();
+
+            // System.out.printf("Creating instance: %s at %s %n", instanceName,
+            // zone);
+
+            // Insert the instance in the specified project and zone.
+            InsertInstanceRequest insertInstanceRequest = InsertInstanceRequest.newBuilder()
+                    .setProject(project)
+                    .setZone(zone)
+                    .setInstanceResource(instanceResource)
+                    .build();
+
+            OperationFuture<Operation, Operation> operation = instancesClient.insertAsync(insertInstanceRequest);
+
+            // Wait for the operation to complete.
+            Operation response = operation.get(3, TimeUnit.MINUTES);
+
+            if (response.hasError()) {
+                return null;
+            }
+
+            // Get instance dynamically assigned private IP after creation
+            AddressDTO addressDTO = getInternalIpAddress(instanceName);
+
+            ComputeDTO responseComputeDTO = new ComputeDTO();
+            responseComputeDTO.setInstanceName(instanceName);
+            responseComputeDTO.setAddress(addressDTO);
+
+            // Successful Instance Creation, save Compute and Current User to
+            // Database
+            Compute compute = new Compute(instanceName, machineTypeDTO.getName(),
+                    addressDTO.getPrivateIPv4Address(),
+                    diskSizeGb, sourceImage, null, subnet);
+
+            Set<User> users = new HashSet<User>();
+            users.add(user);
+
+            compute.setUsers(users);
+            compute.setModule(module);
+            computeRepository.save(compute);
 
             // Minimum of 120 seconds otherwise instance fail to start
             if (maxRunDuration != null) {
@@ -525,10 +725,19 @@ public class ComputeServiceImpl implements ComputeService {
         MachineTypeDTO machineTypeDTO = new MachineTypeDTO();
         machineTypeDTO.setName(compute.getMachineType());
 
+        SourceImageDTO sourceImageDTO = new SourceImageDTO();
+        sourceImageDTO.setName(compute.getSourceImage());
+
         ComputeDTO computeDTO = new ComputeDTO();
         computeDTO.setInstanceName(compute.getInstanceName());
         computeDTO.setAddress(addressDTO);
         computeDTO.setMachineType(machineTypeDTO);
+        computeDTO.setSourceImage(sourceImageDTO);
+        computeDTO.setDiskSizeGb(compute.getDiskSizeGb());
+
+        ModuleDTO moduleDTO = new ModuleDTO();
+        moduleDTO.setModuleId(compute.getModule().getModuleId());
+        computeDTO.setModule(moduleDTO);
 
         return computeDTO;
     }
