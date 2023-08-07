@@ -47,7 +47,7 @@ public class SnapshotServiceImpl implements SnapshotService {
     // want to store your snapshot.
     // You can specify only one storage location. Available locations:
     // https://cloud.google.com/storage/docs/locations#available-locations
-    @Value("${gcp.project.location}")
+    @Value("${gcp.project.region}")
     private String location;
 
     // Project ID or project number of the Cloud project that
