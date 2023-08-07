@@ -16,13 +16,13 @@ import com.cloudlabs.server.user.dto.UserDTO;
 
 @CrossOrigin(origins = {"${app.security.cors.origin}"})
 @RestController
-@RequestMapping("account")
+@RequestMapping("user")
 public class UserController {
     
     @Autowired
     UserService userService;
 
-    @GetMapping("get/{userId}")
+    @GetMapping("/{userId}")
     @PreAuthorize("hasAnyRole('USER','TUTOR','ADMIN')")
     public UserDTO getUserDetails(@PathVariable String userId) throws Exception {
         Long id = Long.valueOf(userId);
