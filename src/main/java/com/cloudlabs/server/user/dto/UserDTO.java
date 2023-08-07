@@ -1,77 +1,107 @@
 package com.cloudlabs.server.user.dto;
 
+import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.role.dto.RoleDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import java.util.List;
 
+@JsonInclude(Include.NON_DEFAULT)
 public class UserDTO {
 
-  private String fullname;
+    private String fullname;
+    private String username;
+    private String email;
+    private String currentPassword;
+    private String newPassword;
+    private List<RoleDTO> roles;
+    private RoleType newRole;
 
-  private String username;
+    public UserDTO() {
+    }
 
-  private String email;
+    public UserDTO(String fullname, String username, String email,
+            String currentPassword) {
+        this.fullname = fullname;
+        this.username = username;
+        this.email = email;
+        this.currentPassword = currentPassword;
+    }
 
-  private String password;
+    public UserDTO(String fullname, String username, String email,
+            String currentPassword, String newPassword,
+            List<RoleDTO> roles, RoleType newRole) {
+        this.fullname = fullname;
+        this.username = username;
+        this.email = email;
+        this.currentPassword = currentPassword;
+        this.newPassword = newPassword;
+        this.roles = roles;
+        this.newRole = newRole;
+    }
 
-  private List<RoleDTO> roles;
+    public UserDTO(String fullname, String username, String email,
+            String currentPassword, List<RoleDTO> roles) {
+        this.fullname = fullname;
+        this.username = username;
+        this.email = email;
+        this.currentPassword = currentPassword;
+        this.roles = roles;
+    }
 
-  public UserDTO() {
-  }
+    public String getFullname() {
+        return this.fullname;
+    }
 
-  public UserDTO(String fullname, String username, String email,
-      String password) {
-    this.fullname = fullname;
-    this.username = username;
-    this.email = email;
-    this.password = password;
-  }
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
+    }
 
-  public UserDTO(String fullname, String username, String email,
-      String password, List<RoleDTO> roles) {
-    this.fullname = fullname;
-    this.username = username;
-    this.email = email;
-    this.password = password;
-    this.roles = roles;
-  }
+    public String getUsername() {
+        return this.username;
+    }
 
-  public String getFullname() {
-    return fullname;
-  }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-  public void setFullname(String fullname) {
-    this.fullname = fullname;
-  }
+    public String getEmail() {
+        return this.email;
+    }
 
-  public String getUsername() {
-    return username;
-  }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-  public void setUsername(String username) {
-    this.username = username;
-  }
+    public String getCurrentPassword() {
+        return this.currentPassword;
+    }
 
-  public String getEmail() {
-    return email;
-  }
+    public void setCurrentPassword(String current_password) {
+        this.currentPassword = current_password;
+    }
 
-  public void setEmail(String email) {
-    this.email = email;
-  }
+    public String getNewPassword() {
+        return this.newPassword;
+    }
 
-  public String getPassword() {
-    return password;
-  }
+    public void setNewPassword(String new_password) {
+        this.newPassword = new_password;
+    }
 
-  public void setPassword(String password) {
-    this.password = password;
-  }
+    public List<RoleDTO> getRoles() {
+        return this.roles;
+    }
 
-  public List<RoleDTO> getRoles() {
-    return roles;
-  }
+    public void setRoles(List<RoleDTO> roles) {
+        this.roles = roles;
+    }
 
-  public void setRoles(List<RoleDTO> roles) {
-    this.roles = roles;
-  }
+    public RoleType getNewRole() {
+        return this.newRole;
+    }
+
+    public void setNewRole(String newRole) {
+        this.newRole = RoleType.valueOf(newRole.toUpperCase());
+    }
 }

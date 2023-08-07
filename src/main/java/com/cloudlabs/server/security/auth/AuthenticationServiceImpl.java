@@ -55,6 +55,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     // Map additional claims, specifically username, fullname, and list of roles
     // for frontend
     HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("id", user.getId());
     extraClaims.put("username", user.getUserName());
     extraClaims.put("fullname", user.getFullname());
     extraClaims.put("roles", user.getRoles());
@@ -90,6 +91,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     userRepository.save(user);
 
     HashMap<String, Object> extraClaims = new HashMap<String, Object>();
+    extraClaims.put("id", user.getId());
     extraClaims.put("username", user.getUserName());
     extraClaims.put("fullname", user.getFullname());
     extraClaims.put("roles", user.getRoles());
