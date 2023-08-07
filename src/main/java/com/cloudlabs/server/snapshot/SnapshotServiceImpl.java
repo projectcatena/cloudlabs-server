@@ -265,13 +265,11 @@ public class SnapshotServiceImpl implements SnapshotService {
         throws IOException, InterruptedException, ExecutionException, TimeoutException {
             // Get computeDTO
             ComputeDTO computeDTO = computeService.getComputeInstance(instanceName);
+            
             System.out.println(computeDTO);
             if (computeDTO == null){
                 return null;
             }
-            // then release IP address
-            computeService.releaseStaticExternalIPAddress(
-				String.format("%s-public-ip", computeDTO.getInstanceName()));
             // then delete previous instance
             computeService.deleteInstance(instanceName);
 
@@ -280,6 +278,6 @@ public class SnapshotServiceImpl implements SnapshotService {
             AttachedDisk disk = diskFromSnapshot(diskType, computeDTO.getDiskSizeGb(), true, snapshotName);
             //createWithDisks(instanceName, disks, "e2-medium", "default", null);
             return computeService.createPrivateInstance(computeDTO, disk);
-}
+    }
 
 }
