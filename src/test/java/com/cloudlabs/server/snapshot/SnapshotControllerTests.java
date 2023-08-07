@@ -2,10 +2,10 @@ package com.cloudlabs.server.snapshot;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -13,11 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
-import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -30,6 +28,7 @@ import com.cloudlabs.server.compute.dto.SourceImageDTO;
 import com.cloudlabs.server.module.ModuleRepository;
 import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
 import com.cloudlabs.server.subnet.SubnetRepository;
@@ -61,6 +60,9 @@ public class SnapshotControllerTests {
 
     @Autowired
     private ModuleRepository moduleRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     ModuleDTO createModule() throws Exception {
                 // Create module (required as need associate compute with module)
@@ -134,32 +136,36 @@ public class SnapshotControllerTests {
     }
 
     @BeforeAll
-    void subnet_setup() {
+    void setup() throws Exception {
+
+        User user = userRepository.findByEmail("snapshot@gmail.com").orElse(null);
+            if (user == null) {
+                Role tutorRole = roleRepository.findByName(RoleType.TUTOR);
+                if (tutorRole == null) {
+                    tutorRole = new Role(RoleType.TUTOR);
+                }
+                Set<Role> roles = new HashSet<>(Arrays.asList(tutorRole));
+                user = new User("Bobby", "tutor", "snapshot@gmail.com", "Pa$$w0rd");
+                userRepository.save(user);
+                user.setRoles(roles);
+                userRepository.save(user);
+            }
+        
         SubnetDTO request = new SubnetDTO();
         request.setSubnetName("test-subnet-snapshot");
         request.setIpv4Range("10.254.3.0/24");
         subnetService.createSubnet(request);
     }
 
-    @BeforeEach
-    void setup(@Autowired JdbcTemplate jdbcTemplate) throws Exception {
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "users_roles");
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "user_table");
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "roles");
-        User user = new User("Bobby", "tutor", "test@gmail.com", "Pa$$w0rd",
-                new HashSet<>(Arrays.asList(new Role(RoleType.TUTOR))));
-        userRepository.save(user);
-
-    }
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteByEmail("test@gmail.com");
+        userRepository.deleteByEmail("snapshot@gmail.com");
         subnetService.deleteSubnet("test-subnet-snapshot");
     }
     
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "snapshot@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createSnapshot() throws Exception {
         ModuleDTO moduleResponse = createModule();
         ComputeDTO response = createInstance("test-instance-for-create-snapshot-success", moduleResponse);
@@ -184,7 +190,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "snapshot@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteSnapshot() throws Exception {
         ModuleDTO moduleResponse = createModule();
         // create the instance
@@ -220,7 +226,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "snapshot@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void listSnapshots() throws Exception {
         ModuleDTO moduleResponse = createModule();
         // create the instance
@@ -249,7 +255,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "snapshot@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotExists() throws Exception {
         ModuleDTO moduleResponse = createModule();
         // create the instance
@@ -281,7 +287,7 @@ public class SnapshotControllerTests {
     }
 
     @Test
-    @WithUserDetails(value = "test@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "snapshot@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void revert_whenSnapshotDoesNotExist() throws Exception {
         ModuleDTO moduleResponse = createModule();
         // create the instance
