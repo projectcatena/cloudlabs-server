@@ -89,7 +89,7 @@ public class ComputeServiceImpl implements ComputeService {
     @Value("${gcp.project.vpc}")
     private String vpc;
 
-    @Value("${gcp.startup.debian-ubuntu}")
+    @Value("${gcp.startup.debian}")
     private String debianUbuntuStartupScriptURL;
 
     @Value("${gcp.startup.windows}")
@@ -236,7 +236,7 @@ public class ComputeServiceImpl implements ComputeService {
                     .setValue(startupScript) // Authenticated or gsutil URL
                     .build();
         
-        Items debianUbuntuStartupScriptItem = Items.newBuilder()
+        Items debianStartupScriptItem = Items.newBuilder()
         .setKey("startup-script-url")
         .setValue(debianUbuntuStartupScriptURL)
         .build();
@@ -246,7 +246,7 @@ public class ComputeServiceImpl implements ComputeService {
         .setValue(windowsStartupScriptURL)
         .build();
 
-            Metadata metadata = Metadata.newBuilder().addAllItems(Arrays.asList(items,debianUbuntuStartupScriptItem,windowsStartupScriptItem)).build();
+            Metadata metadata = Metadata.newBuilder().addAllItems(Arrays.asList(items,debianStartupScriptItem,windowsStartupScriptItem)).build();
 
             // Bind `instanceName`, `machineType`, `disk`, and `networkInterface` to
             // an instance.
