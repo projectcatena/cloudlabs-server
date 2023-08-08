@@ -73,7 +73,7 @@ jobs:
         KEYSTORE_LOCATION: ${{ secrets.KEYSTORE_LOCATION }}
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         PRIVATE_KEY_PASSPHRASE: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
-        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        FRONTEND_URL: ${{ vars.FRONTEND_URL }} # repo var is in vars context
         POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
         POSTGRESQL_USER: ${{ secrets.POSTGRESQL_USER }}
         POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
