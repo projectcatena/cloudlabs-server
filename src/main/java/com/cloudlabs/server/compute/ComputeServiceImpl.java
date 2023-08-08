@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -87,6 +88,12 @@ public class ComputeServiceImpl implements ComputeService {
     // vpc-name
     @Value("${gcp.project.vpc}")
     private String vpc;
+
+    @Value("${gcp.startup.debian-ubuntu}")
+    private String debianUbuntuStartupScriptURL;
+
+    @Value("${gcp.startup.windows}")
+    private String windowsStartupScriptURL;
 
     @Autowired
     private ComputeRepository computeRepository;
@@ -228,8 +235,18 @@ public class ComputeServiceImpl implements ComputeService {
                     .setKey("startup-script")
                     .setValue(startupScript) // Authenticated or gsutil URL
                     .build();
+        
+        Items debianUbuntuStartupScriptItem = Items.newBuilder()
+        .setKey("startup-script-url")
+        .setValue(debianUbuntuStartupScriptURL)
+        .build();
 
-            Metadata metadata = Metadata.newBuilder().addItems(items).build();
+        Items windowsStartupScriptItem = Items.newBuilder()
+        .setKey("windows-startup-script-url")
+        .setValue(windowsStartupScriptURL)
+        .build();
+
+            Metadata metadata = Metadata.newBuilder().addAllItems(Arrays.asList(items,debianUbuntuStartupScriptItem,windowsStartupScriptItem)).build();
 
             // Bind `instanceName`, `machineType`, `disk`, and `networkInterface` to
             // an instance.
