@@ -69,8 +69,16 @@ jobs:
         GCP_PROJECT_VPC: ${{ secrets.GCP_PROJECT_VPC }}
         GCP_DISK_PROJECT: ${{ secrets.GCP_DISK_PROJECT }}
         GCP_SIGNING_SERVICE_ACCOUNT: ${{ secrets.GCP_SIGNING_SERVICE_ACCOUNT }}
+        KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+        KEYSTORE_LOCATION: ${{ secrets.KEYSTORE_LOCATION }}
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         PRIVATE_KEY_PASSPHRASE: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
+        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
+        POSTGRESQL_USER: ${{ secrets.POSTGRESQL_USER }}
+        POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+        GUACD_HOSTNAME: ${{ secrets.GUACD_HOSTNAME }}
+        GUACD_PORT: ${{ secrets.GUACD_PORT }}
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
@@ -79,6 +87,3 @@ jobs:
         name: codecov
       env: 
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-
-

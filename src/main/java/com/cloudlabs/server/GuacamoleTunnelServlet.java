@@ -11,11 +11,18 @@ import org.apache.guacamole.net.SimpleGuacamoleTunnel;
 import org.apache.guacamole.protocol.ConfiguredGuacamoleSocket;
 import org.apache.guacamole.protocol.GuacamoleConfiguration;
 import org.apache.guacamole.servlet.GuacamoleHTTPTunnelServlet;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class GuacamoleTunnelServlet extends GuacamoleHTTPTunnelServlet {
+
+    @Value("${guacd.hostname}")
+    private String hostname;
+
+    @Value("${guacd.port}")
+    private int port;
 
     @Override
     @RequestMapping(path = "tunnel")
@@ -41,7 +48,7 @@ public class GuacamoleTunnelServlet extends GuacamoleHTTPTunnelServlet {
 
         // Connect to guacd - everything is hard-coded here.
         GuacamoleSocket socket = new ConfiguredGuacamoleSocket(
-                new InetGuacamoleSocket("localhost", 4822), config);
+                new InetGuacamoleSocket(hostname, port), config);
 
         // Return a new tunnel which uses the connected socket
         return new SimpleGuacamoleTunnel(socket);
