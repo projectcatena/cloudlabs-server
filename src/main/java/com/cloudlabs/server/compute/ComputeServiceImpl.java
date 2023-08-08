@@ -90,7 +90,7 @@ public class ComputeServiceImpl implements ComputeService {
     private String vpc;
 
     @Value("${gcp.startup.debian}")
-    private String debianUbuntuStartupScriptURL;
+    private String debianStartupScriptURL;
 
     @Value("${gcp.startup.windows}")
     private String windowsStartupScriptURL;
@@ -238,7 +238,7 @@ public class ComputeServiceImpl implements ComputeService {
         
         Items debianStartupScriptItem = Items.newBuilder()
         .setKey("startup-script-url")
-        .setValue(debianUbuntuStartupScriptURL)
+        .setValue(debianStartupScriptURL)
         .build();
 
         Items windowsStartupScriptItem = Items.newBuilder()
