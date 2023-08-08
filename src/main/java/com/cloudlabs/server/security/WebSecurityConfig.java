@@ -3,6 +3,7 @@ package com.cloudlabs.server.security;
 import com.cloudlabs.server.security.jwt.JwtAuthenticationFilter;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +29,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthenticationProvider authenticationProvider;
 
+    @Value("${app.security.cors.origin}")
+    private String frontendURL;
+
     public static final String AUTHORITIES_CLAIM_NAME = "roles";
 
     /*
@@ -37,12 +41,6 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
 
-        /*
-         * http.csrf().disable()
-         * .authorizeHttpRequests((authorize) ->
-         * authorize.requestMatchers("/module").hasRole)
-         */
-
         http.cors()
                 .and()
                 .csrf()
@@ -50,7 +48,8 @@ public class WebSecurityConfig {
                 .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll() // allow CORS option call
-                .antMatchers("/auth/login", "/auth/signout", "/auth/register", "/error")
+                .antMatchers("/auth/login", "/auth/signout", "/auth/register", "/error",
+                        "/status/health")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
@@ -62,18 +61,6 @@ public class WebSecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
 
-        // JWT Validation Configuration
-        /*
-         * http.oauth2ResourceServer().jwt().jwtAuthenticationConverter(
-         * authenticationConverter());
-         */
-
-        /*
-         * .formLogin()
-         * .permitAll()
-         * .successHandler(successHandler)
-         * .and()
-         */
         return http.build();
     }
 
@@ -81,7 +68,7 @@ public class WebSecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList(frontendURL));
         configuration.setAllowedMethods(Arrays.asList("*"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -92,19 +79,4 @@ public class WebSecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
-    // Converts Bearer token to Jwt token
-    /*
-     * @Bean
-     * protected JwtAuthenticationConverter authenticationConverter() {
-     * JwtGrantedAuthoritiesConverter authoritiesConverter = new
-     * JwtGrantedAuthoritiesConverter();
-     * authoritiesConverter.setAuthorityPrefix("");
-     * authoritiesConverter.setAuthoritiesClaimName(AUTHORITIES_CLAIM_NAME);
-     *
-     * JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-     * converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-     * return converter;
-     * }
-     */
 }
