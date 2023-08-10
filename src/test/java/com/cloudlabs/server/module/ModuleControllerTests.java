@@ -8,6 +8,9 @@ import com.cloudlabs.server.compute.Compute;
 import com.cloudlabs.server.compute.ComputeRepository;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.module.dto.ModuleDTO;
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
+import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.subnet.Subnet;
 import com.cloudlabs.server.subnet.SubnetRepository;
 import com.cloudlabs.server.user.User;
@@ -28,7 +31,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -60,6 +65,9 @@ public class ModuleControllerTests {
     @Autowired
     private SubnetRepository subnetRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     @BeforeAll
     public void setup() throws Exception {
         Subnet subnet = subnetRepository.findBySubnetName("test-subnet-module");
@@ -67,11 +75,27 @@ public class ModuleControllerTests {
         if (subnet == null) {
             subnetRepository.save(new Subnet("test-subnet-module", "10.254.4.0/24"));
         }
+
+        // Create new test user
+        User user = new User();
+        user.setUsername("tester");
+        user.setFullname("BobTester");
+        user.setEmail("tester@gmail.com");
+        user.setPassword("test@123");
+        userRepository.save(user);
+        Role tutorRole = roleRepository.findByName(RoleType.TUTOR);
+        if (tutorRole == null) {
+                tutorRole = new Role(RoleType.TUTOR);
+        }
+        Set<Role> roles = new HashSet<>(Arrays.asList(tutorRole));
+        user.setRoles(roles);
+        userRepository.save(user);
     }
 
     @AfterAll
     void teardown() throws Exception {
         subnetRepository.deleteBySubnetName("test-subnet-module");
+        userRepository.deleteByEmail("tester@gmail.com");
     }
 
     @Test
@@ -314,6 +338,48 @@ public class ModuleControllerTests {
                         .content(newjsonString))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
+    }
+
+    @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    void addAndListUsersModules_whenValidParametersGiven() throws Exception {
+        Module module = new Module("subtitle", "name", "description");
+        moduleRepository.save(module);
+
+        UserDTO userDTO = new UserDTO();
+        userDTO.setEmail("tester@gmail.com");
+        List<UserDTO> userDTOs = Arrays.asList(userDTO);
+
+        ModuleDTO request = new ModuleDTO();
+        request.setModuleName("name");
+        request.setModuleId(module.getModuleId());
+        request.setUsers(userDTOs);
+
+        String jsonString = objectMapper.writeValueAsString(request);
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.post("/Modules/add-users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        assertFalse(
+                moduleRepository.findByUsers_Email(userDTO.getEmail()).isEmpty());
+
+        assertFalse(
+                moduleRepository.findByUsers_Email(userDTO.getEmail()).isEmpty());
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/Modules/list")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonString))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn();
+
+        // Clean up
+        moduleRepository.deleteById(module.getModuleId());
+        userRepository.deleteByEmail(userDTO.getEmail());
     }
 
     @Test

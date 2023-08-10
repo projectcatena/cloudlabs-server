@@ -10,6 +10,8 @@ import java.util.concurrent.TimeoutException;
 public interface ModuleService {
     List<ModuleDTO> getAllModules();
 
+    List<ModuleDTO> getUserModules();
+
     ModuleDTO getModuleById(Long moduleId);
 
     ModuleDTO addModule(ModuleDTO moduleDTO);
