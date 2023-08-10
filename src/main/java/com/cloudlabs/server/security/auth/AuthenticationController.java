@@ -6,6 +6,7 @@ import com.cloudlabs.server.security.auth.dto.RegisterDTO;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
+
+  @Value("${cloudlabs.domain.name}")
+  private String domain;
 
   @Autowired
   private AuthenticationService authenticationService;
@@ -29,8 +33,10 @@ public class AuthenticationController {
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
     cookie.setHttpOnly(true);
     cookie.setPath("/");
-    cookie.setDomain("localhost");
-    cookie.setMaxAge(50 * 60); // 5 minutes
+
+    cookie.setDomain(domain); // localhost
+    cookie.setMaxAge(5 * 60); // 5 minutes
+
 
     response.addCookie(cookie);
     return ResponseEntity.ok(authenticationResponseDTO);
@@ -43,8 +49,10 @@ public class AuthenticationController {
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
     cookie.setHttpOnly(true);
     cookie.setPath("/");
-    cookie.setDomain("localhost");
-    cookie.setMaxAge(50 * 60); // 5 minutes
+
+    cookie.setDomain(domain);
+    cookie.setMaxAge(5 * 60); // 5 minutes
+
 
     response.addCookie(cookie);
     return ResponseEntity.ok(authenticationResponseDTO);
@@ -56,7 +64,7 @@ public class AuthenticationController {
     final Cookie cookie = new Cookie("jwt", null);
     cookie.setHttpOnly(true);
     cookie.setPath("/");
-    cookie.setDomain("localhost");
+    cookie.setDomain(domain);
     cookie.setMaxAge(0); // logout set to 0 to clear cookie
 
     response.addCookie(cookie);

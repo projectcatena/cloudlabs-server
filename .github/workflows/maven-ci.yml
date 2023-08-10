@@ -75,12 +75,13 @@ jobs:
         KEYSTORE_LOCATION: ${{ secrets.KEYSTORE_LOCATION }}
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         PRIVATE_KEY_PASSPHRASE: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
-        FRONTEND_URL: ${{ vars.FRONTEND_URL }} # repo var is in vars context
         POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
         POSTGRESQL_USER: ${{ secrets.POSTGRESQL_USER }}
         POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
         GUACD_HOSTNAME: ${{ secrets.GUACD_HOSTNAME }}
         GUACD_PORT: ${{ secrets.GUACD_PORT }}
+        FRONTEND_URL: ${{ vars.FRONTEND_URL }} # repo var is in vars context
+        CLOUDLABS_DOMAIN_NAME: ${{ vars.CLOUDLABS_DOMAIN_NAME }}
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
