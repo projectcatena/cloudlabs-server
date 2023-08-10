@@ -15,6 +15,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -718,6 +719,22 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
+    public List<ComputeDTO> listAllComputeInstances() {
+        List<Compute> computes = computeRepository.findAll();
+
+        List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
+
+        for (Compute compute : computes) {
+                ComputeDTO computeDTO = new ComputeDTO();
+                computeDTO.setInstanceName(compute.getInstanceName());
+
+                computeDTOs.add(computeDTO);
+        }
+        return computeDTOs;
+
+    }
+
+    @Override
     public ComputeDTO getComputeInstance(String instanceName) {
 
         // Get email from Jwt token using context
@@ -988,5 +1005,28 @@ public class ComputeServiceImpl implements ComputeService {
         computeDTO.setMaxRunDuration(maxRunDuration);
 
         return computeDTO;
+    }
+
+    @Override
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserDTO> userList = new ArrayList<UserDTO>();
+        for (User user : users) {
+                List<ComputeDTO> computeDTOs = new ArrayList<ComputeDTO>();
+                List<Compute> computes = computeRepository.findByUsers_Email(user.getEmail());
+                UserDTO userDTO = new UserDTO();
+                userDTO.setEmail(user.getEmail());
+                userDTO.setFullname(user.getFullname());
+                userDTO.setUsername(user.getUserName());
+                for (Compute compute: computes) {
+                        ComputeDTO computeDTO = new ComputeDTO();
+                        computeDTO.setInstanceName(compute.getInstanceName());
+                        computeDTOs.add(computeDTO);
+                }
+                userDTO.setComputes(computeDTOs);
+                userList.add(userDTO);
+        }
+
+        return userList;
     }
 }

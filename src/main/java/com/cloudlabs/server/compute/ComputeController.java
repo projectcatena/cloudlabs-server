@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
+import com.cloudlabs.server.user.dto.UserDTO;
 
 @RestController
 @RequestMapping("/compute")
@@ -57,6 +58,14 @@ public class ComputeController {
 	public List<ComputeDTO> listComputeInstances(@RequestParam Long moduleId) {
 
 		List<ComputeDTO> response = computeService.listComputeInstances(moduleId);
+
+		return response;
+	}
+
+	@GetMapping("/listall")
+	public List<ComputeDTO> listAllComputeInstances() {
+
+		List<ComputeDTO> response = computeService.listAllComputeInstances();
 
 		return response;
 	}
@@ -137,5 +146,15 @@ public class ComputeController {
 		ComputeDTO response = computeService.removeComputeInstanceUsers(computeDTO);
 
 		return response;
+	}
+
+	@GetMapping("/list-users")
+	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+	public List<UserDTO> listUsers() throws IOException {
+		List<UserDTO> userList = computeService.getAllUsers();
+		if (userList == null) {
+            return null;
+        }
+        return userList;
 	}
 }

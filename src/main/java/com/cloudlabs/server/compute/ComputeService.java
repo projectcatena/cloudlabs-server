@@ -8,6 +8,7 @@ import java.util.concurrent.TimeoutException;
 import com.cloudlabs.server.compute.dto.AddressDTO;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.compute.dto.MachineTypeDTO;
+import com.cloudlabs.server.user.dto.UserDTO;
 import com.google.cloud.compute.v1.AttachedDisk;
 
 public interface ComputeService {
@@ -34,6 +35,8 @@ public interface ComputeService {
 
     List<ComputeDTO> listComputeInstances(Long moduleId);
 
+    List<ComputeDTO> listAllComputeInstances();
+
     ComputeDTO getComputeInstance(String instanceName);
 
     ComputeDTO resetInstance(String instanceName)
@@ -53,6 +56,8 @@ public interface ComputeService {
     ComputeDTO addComputeInstanceUsers(ComputeDTO computeDTO);
 
     ComputeDTO removeComputeInstanceUsers(ComputeDTO computeDTO);
+
+    List<UserDTO> getAllUsers();
 
     ComputeDTO limitComputeRuntime(String instanceName, Long maxRunDuration)
             throws IOException, InterruptedException, ExecutionException,

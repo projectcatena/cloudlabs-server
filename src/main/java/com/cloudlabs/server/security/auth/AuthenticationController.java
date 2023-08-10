@@ -33,8 +33,10 @@ public class AuthenticationController {
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
     cookie.setHttpOnly(true);
     cookie.setPath("/");
+
     cookie.setDomain(domain); // localhost
-    cookie.setMaxAge(5 * 60); // 5 minutes
+    cookie.setMaxAge(30 * 60); // 30 minutes
+
 
     response.addCookie(cookie);
     return ResponseEntity.ok(authenticationResponseDTO);
@@ -47,8 +49,10 @@ public class AuthenticationController {
     final Cookie cookie = new Cookie("jwt", authenticationResponseDTO.getJwt());
     cookie.setHttpOnly(true);
     cookie.setPath("/");
+
     cookie.setDomain(domain);
-    cookie.setMaxAge(5 * 60); // 5 minutes
+    cookie.setMaxAge(30 * 60); // 50 minutes
+
 
     response.addCookie(cookie);
     return ResponseEntity.ok(authenticationResponseDTO);

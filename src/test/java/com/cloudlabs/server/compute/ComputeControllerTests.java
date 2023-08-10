@@ -167,6 +167,11 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
 
+        // List all compute instances
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/compute/listall"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
         // List
         this.mockMvc
                 .perform(MockMvcRequestBuilders
@@ -758,7 +763,7 @@ public class ComputeControllerTests {
     }
 
     @Test
-    void addComputeInstanceUsers_whenValidParametersGiven() throws Exception {
+    void addComputeInstanceUsersAndList_whenValidParametersGiven() throws Exception {
         // Create an entry in database will do, as this doesn't need GCP to test
         Subnet subnet = new Subnet("test-subnet", "10.10.1.0/24");
         subnetRepository.save(subnet);
@@ -801,6 +806,12 @@ public class ComputeControllerTests {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // List compute instance users
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/compute/list-users"))
+                        .andExpect(MockMvcResultMatchers.status().isOk())
+                        .andReturn();
 
         assertTrue(computeRepository
                 .findByUsers_EmailAndInstanceName(userDTO.getEmail(),

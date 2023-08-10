@@ -1,5 +1,7 @@
 package com.cloudlabs.server.user.dto;
 
+import com.cloudlabs.server.compute.Compute;
+import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.role.dto.RoleDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -16,6 +18,7 @@ public class UserDTO {
     private String newPassword;
     private List<RoleDTO> roles;
     private RoleType newRole;
+    private List<ComputeDTO> computes;
 
     public UserDTO() {
     }
@@ -48,6 +51,13 @@ public class UserDTO {
         this.currentPassword = currentPassword;
         this.roles = roles;
     }
+
+    public UserDTO(String fullname, String username, String email, List<ComputeDTO> computes) {
+        this.fullname = fullname;
+        this.username = username;
+        this.email = email;
+        this.computes = computes;
+            }
 
     public String getFullname() {
         return this.fullname;
@@ -103,5 +113,13 @@ public class UserDTO {
 
     public void setNewRole(String newRole) {
         this.newRole = RoleType.valueOf(newRole.toUpperCase());
+    }
+
+    public List<ComputeDTO> getComputes() {
+        return this.computes;
+    }
+
+    public void setComputes(List<ComputeDTO> computes) {
+        this.computes = computes;
     }
 }

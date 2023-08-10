@@ -149,7 +149,7 @@ public class JwtServiceImpl implements JwtService {
       UserDetails userDetails) {
 
     Instant issuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-    Instant expiration = issuedAt.plus(5, ChronoUnit.MINUTES);
+    Instant expiration = issuedAt.plus(30, ChronoUnit.MINUTES);
 
     return Jwts.builder()
         .setClaims(extraClaims)
