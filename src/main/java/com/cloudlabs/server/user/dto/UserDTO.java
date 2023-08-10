@@ -2,6 +2,7 @@ package com.cloudlabs.server.user.dto;
 
 import com.cloudlabs.server.compute.Compute;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
+import com.cloudlabs.server.module.dto.ModuleDTO;
 import com.cloudlabs.server.role.RoleType;
 import com.cloudlabs.server.role.dto.RoleDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -19,6 +20,7 @@ public class UserDTO {
     private List<RoleDTO> roles;
     private RoleType newRole;
     private List<ComputeDTO> computes;
+    private List<ModuleDTO> modules;
 
     public UserDTO() {
     }
@@ -57,6 +59,13 @@ public class UserDTO {
         this.username = username;
         this.email = email;
         this.computes = computes;
+            }
+
+    public UserDTO(String fullname, String username, String email, List<ModuleDTO> modules, boolean isModuleConstructor) {
+        this.fullname = fullname;
+        this.username = username;
+        this.email = email;
+        this.modules = modules;
             }
 
     public String getFullname() {
@@ -121,5 +130,13 @@ public class UserDTO {
 
     public void setComputes(List<ComputeDTO> computes) {
         this.computes = computes;
+    }
+
+    public List<ModuleDTO> getModules() {
+        return this.modules;
+    }
+
+    public void setModules(List<ModuleDTO> modules) {
+        this.modules = modules;
     }
 }
