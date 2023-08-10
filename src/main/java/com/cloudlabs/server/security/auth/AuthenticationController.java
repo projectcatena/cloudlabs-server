@@ -35,7 +35,7 @@ public class AuthenticationController {
     cookie.setPath("/");
 
     cookie.setDomain(domain); // localhost
-    cookie.setMaxAge(5 * 60); // 5 minutes
+    cookie.setMaxAge(30 * 60); // 30 minutes
 
 
     response.addCookie(cookie);
@@ -51,7 +51,7 @@ public class AuthenticationController {
     cookie.setPath("/");
 
     cookie.setDomain(domain);
-    cookie.setMaxAge(5 * 60); // 5 minutes
+    cookie.setMaxAge(30 * 60); // 50 minutes
 
 
     response.addCookie(cookie);
