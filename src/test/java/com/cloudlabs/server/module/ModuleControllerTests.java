@@ -99,6 +99,7 @@ public class ModuleControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createModule_whenValidParametersGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -107,12 +108,18 @@ public class ModuleControllerTests {
 
         String jsonString = objectMapper.writeValueAsString(request);
 
-        mockMvc
+        MvcResult result = mockMvc
                 .perform(MockMvcRequestBuilders.post("/Modules/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        ModuleDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ModuleDTO.class);
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @WithMockUser(username = "user", roles = { "USER" })
@@ -135,6 +142,7 @@ public class ModuleControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getAllModules() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -143,20 +151,25 @@ public class ModuleControllerTests {
 
         String jsonString = objectMapper.writeValueAsString(request);
 
-        mockMvc
+        MvcResult result = mockMvc
                 .perform(MockMvcRequestBuilders.post("/Modules/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
-        moduleService.addModule(request);
-
         mockMvc.perform(MockMvcRequestBuilders.get("/Modules"))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        ModuleDTO response = objectMapper.readValue(
+                result.getResponse().getContentAsString(), ModuleDTO.class);
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getModuleById_whenValidParametersGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -175,15 +188,17 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
-
         mockMvc
                 .perform(MockMvcRequestBuilders.get("/Modules/{moduleId}",
-                        savedResponse.getModuleId()))
+                        response.getModuleId()))
                 .andExpect(MockMvcResultMatchers.status().isOk());
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getModuleById_whenModuleNotFound() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -202,16 +217,19 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
         Long nonExistentModuleId = 999L; // Uses non-existent module id for test
 
         mockMvc
                 .perform(MockMvcRequestBuilders.get("/Modules/{moduleId}",
                         nonExistentModuleId))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteModuleById_whenValidParametersGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -230,15 +248,14 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
-
         mockMvc
                 .perform(MockMvcRequestBuilders.delete("/Modules/delete/{moduleId}",
-                        savedResponse.getModuleId()))
+                        response.getModuleId()))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteModuleById_WhenModuleNotFound() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -257,16 +274,19 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
         Long nonExistentModuleId = 999L; // uses non-existent module id
 
         mockMvc
                 .perform(MockMvcRequestBuilders.delete("/Modules/delete/{moduleId}",
                         nonExistentModuleId))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void updateModule_whenValidModuleIdAndPartialDataGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -285,25 +305,27 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
+        response.setModuleSubtitle("newsubtitle");
+        response.setModuleName("");
+        response.setModuleDescription("");
 
-        savedResponse.setModuleSubtitle("newsubtitle");
-        savedResponse.setModuleName("");
-        savedResponse.setModuleDescription("");
-
-        String newjsonString = objectMapper.writeValueAsString(savedResponse);
+        String newjsonString = objectMapper.writeValueAsString(response);
 
         mockMvc
                 .perform(
                         MockMvcRequestBuilders
-                                .put("/Modules/update/{moduleId}", savedResponse.getModuleId())
+                                .put("/Modules/update/{moduleId}", response.getModuleId())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(newjsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void updateModule_whenInvalidModuleIdAndPartialDataGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");
@@ -322,13 +344,11 @@ public class ModuleControllerTests {
         ModuleDTO response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), ModuleDTO.class);
 
-        ModuleDTO savedResponse = moduleService.addModule(response);
+        response.setModuleSubtitle("newsubtitle");
+        response.setModuleName("");
+        response.setModuleDescription("");
 
-        savedResponse.setModuleSubtitle("newsubtitle");
-        savedResponse.setModuleName("");
-        savedResponse.setModuleDescription("");
-
-        String newjsonString = objectMapper.writeValueAsString(savedResponse);
+        String newjsonString = objectMapper.writeValueAsString(response);
         Long nonExistentModuleId = 999L; // uses non-existent module id
 
         mockMvc
@@ -338,6 +358,9 @@ public class ModuleControllerTests {
                         .content(newjsonString))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andReturn();
+
+        // Clean up
+        moduleRepository.deleteById(response.getModuleId());
     }
 
     @Test
@@ -379,7 +402,6 @@ public class ModuleControllerTests {
 
         // Clean up
         moduleRepository.deleteById(module.getModuleId());
-        userRepository.deleteByEmail(userDTO.getEmail());
     }
 
     @Test
