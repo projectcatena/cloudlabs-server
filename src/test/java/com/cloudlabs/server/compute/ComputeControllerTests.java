@@ -419,6 +419,7 @@ public class ComputeControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "computetutor@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void failCreateComputeEngine_whenIncorrectParametersGiven() throws Exception {
 
         // Create module (required as need associate compute with module)
