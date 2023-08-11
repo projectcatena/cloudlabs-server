@@ -85,8 +85,15 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     public ModuleDTO getModuleById(Long moduleId) {
-        Module module = repository.findById(moduleId).orElseThrow(() -> 
-            new ResponseStatusException(HttpStatus.NOT_FOUND, "Module not found"));;
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        Module module = repository.findByUsers_EmailAndId(email, moduleId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Module not found"));
 
         // Map Module entity to ModuleDTO
         ModuleDTO moduleDTO = new ModuleDTO();
