@@ -148,13 +148,13 @@ public class ComputeController {
 		return response;
 	}
 
-	@GetMapping("/list-users")
+	@GetMapping("/list-users-computes")
 	@PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
-	public List<UserDTO> listUsers() throws IOException {
-		List<UserDTO> userList = computeService.getAllUsers();
-		if (userList == null) {
+	public List<UserDTO> listUsersWithComputes() throws IOException {
+		List<UserDTO> response = computeService.listUsersWithComputes();
+		if (response == null) {
             return null;
         }
-        return userList;
+        return response;
 	}
 }

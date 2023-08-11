@@ -809,7 +809,7 @@ public class ComputeControllerTests {
 
         // List compute instance users
         this.mockMvc
-                .perform(MockMvcRequestBuilders.get("/compute/list-users"))
+                .perform(MockMvcRequestBuilders.get("/compute/list-users-computes"))
                         .andExpect(MockMvcResultMatchers.status().isOk())
                         .andReturn();
 

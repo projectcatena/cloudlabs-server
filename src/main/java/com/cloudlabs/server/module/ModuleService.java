@@ -33,4 +33,6 @@ public interface ModuleService {
     ModuleDTO removeUsers(ModuleDTO moduleDTO);
 
     List<UserDTO> listUsers(ModuleDTO moduleDTO);
+
+    List<UserDTO> listUsersWithModules();
 }

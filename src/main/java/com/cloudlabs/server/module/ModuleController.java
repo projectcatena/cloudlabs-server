@@ -143,6 +143,16 @@ public class ModuleController {
         return response;
     }
 
+    @GetMapping("/list-users-modules")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
+    public List<UserDTO> listUsersWithModules() throws IOException {
+		List<UserDTO> response = moduleService.listUsersWithModules();
+		if (response == null) {
+            return null;
+        }
+        return response;
+	}
+
     @PostMapping("/add-computes")
     public ModuleDTO addModuleComputeInstance(@RequestBody ModuleDTO moduleDTO) {
         ModuleDTO response = moduleService.addModuleComputeInstance(moduleDTO);

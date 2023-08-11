@@ -1008,7 +1008,7 @@ public class ComputeServiceImpl implements ComputeService {
     }
 
     @Override
-    public List<UserDTO> getAllUsers() {
+    public List<UserDTO> listUsersWithComputes() {
         List<User> users = userRepository.findAll();
         List<UserDTO> userList = new ArrayList<UserDTO>();
         for (User user : users) {

@@ -304,4 +304,27 @@ public class ModuleServiceImpl implements ModuleService {
 
         return userDTOs;
     }
+
+    @Override
+    public List<UserDTO> listUsersWithModules() {
+        List<User> users = userRepository.findAll();
+        List<UserDTO> userList = new ArrayList<UserDTO>();
+        for (User user: users) {
+            List<ModuleDTO> moduleDTOs = new ArrayList<ModuleDTO>();
+            List<Module> modules = repository.findByUsers_Email(user.getEmail());
+            UserDTO userDTO = new UserDTO();
+            userDTO.setEmail(user.getEmail());
+            userDTO.setFullname(user.getFullname());
+            userDTO.setUsername(user.getUserName());
+            for (Module module: modules) {
+                ModuleDTO moduleDTO = new ModuleDTO();
+                moduleDTO.setModuleName(module.getModuleName());
+                moduleDTOs.add(moduleDTO);
+            }
+            userDTO.setModules(moduleDTOs);
+            userList.add(userDTO);
+        }
+        
+        return userList;
+    }
 }

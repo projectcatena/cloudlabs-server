@@ -423,6 +423,10 @@ public class ModuleControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andReturn();
 
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get("/Modules/list-users-modules"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
         List<UserDTO> response = objectMapper.readValue(result.getResponse().getContentAsString(),
                 new TypeReference<List<UserDTO>>() {
                 });
