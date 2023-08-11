@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,9 +39,18 @@ public class UserController {
     public UserDTO updateUserDetails(@RequestBody UserDTO userDTO) throws Exception {
         UserDTO result = userService.updateUserDetails(userDTO);
         
-        if (result.equals(null)) {
+        if (result == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to retrieve");
         }
         return result;
+    }
+
+    @DeleteMapping("delete")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public void deleteUser(@RequestBody UserDTO userDTO) throws Exception {
+        Boolean result = userService.deleteUser(userDTO);
+        if (!result) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to delete user");
+        }
     }
 }
