@@ -36,6 +36,15 @@ public class ModuleController {
         return response;
     }
 
+    @GetMapping("/list")
+    @PreAuthorize("hasAnyRole('USER','TUTOR','ADMIN')")
+    public List<ModuleDTO> getUserModules() {
+
+        List<ModuleDTO> response = moduleService.getUserModules();
+
+        return response;
+    }
+
     @GetMapping("/{id}")
     public ModuleDTO getModuleById(@PathVariable String id)
             throws IOException {

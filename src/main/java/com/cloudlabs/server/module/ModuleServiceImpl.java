@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import javax.management.InstanceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -53,6 +55,31 @@ public class ModuleServiceImpl implements ModuleService {
 
             moduleDTOs.add(moduleDTO);
         }
+        return moduleDTOs;
+    }
+
+    @Override
+    public List<ModuleDTO> getUserModules() {
+
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        List<Module> modules = repository.findByUsers_Email(email);
+
+        List<ModuleDTO> moduleDTOs = new ArrayList<>();
+
+        for (Module module : modules) {
+            ModuleDTO moduleDTO = new ModuleDTO();
+            moduleDTO.setModuleId(module.getModuleId());
+            moduleDTO.setModuleSubtitle(module.getModuleSubtitle());
+            moduleDTO.setModuleName(module.getModuleName());
+            moduleDTO.setModuleDescription(module.getModuleDescription());
+            moduleDTOs.add(moduleDTO);
+        }
+
         return moduleDTOs;
     }
 
