@@ -1,0 +1,91 @@
+name: Maven CI
+
+on:
+  push:
+    branches: [ "main", "staging" ]
+  pull_request:
+    branches: [ "main", "staging" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: user
+          POSTGRES_DB: cloudlabs
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    # Add "id-token" with the intended permissions.
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }} # 'my-service-account@my-project.iam.gserviceaccount.com'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+    - name: Run Tests
+      run: mvn clean install
+      env:
+        GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GCP_PROJECT_ZONE: ${{ secrets.GCP_PROJECT_ZONE }}
+        GCP_PROJECT_REGION: ${{ secrets.GCP_PROJECT_REGION }}
+        GCP_PROJECT_VPC: ${{ secrets.GCP_PROJECT_VPC }}
+        GCP_DISK_PROJECT: ${{ secrets.GCP_DISK_PROJECT }}
+        GCP_SIGNING_SERVICE_ACCOUNT: ${{ secrets.GCP_SIGNING_SERVICE_ACCOUNT }}
+        GCP_STARTUP_WINDOWS: ${{ secrets.GCP_STARTUP_WINDOWS }}
+        GCP_STARTUP_DEBIAN: ${{ secrets.GCP_STARTUP_DEBIAN }}
+        KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+        KEYSTORE_LOCATION: ${{ secrets.KEYSTORE_LOCATION }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        PRIVATE_KEY_PASSPHRASE: ${{ secrets.PRIVATE_KEY_PASSPHRASE }}
+        POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
+        POSTGRESQL_USER: ${{ secrets.POSTGRESQL_USER }}
+        POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+        GUACD_HOSTNAME: ${{ secrets.GUACD_HOSTNAME }}
+        GUACD_PORT: ${{ secrets.GUACD_PORT }}
+        FRONTEND_URL: ${{ vars.FRONTEND_URL }} # repo var is in vars context
+        CLOUDLABS_DOMAIN_NAME: ${{ vars.CLOUDLABS_DOMAIN_NAME }}
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./target/site/jacoco/jacoco.xml
+        name: codecov
+      env: 
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "cloudlabs-backend-deploy"
+spec:
+  selector:
+    matchLabels:
+      app: "cloudlabs-backend"
+  template:
+    metadata:
+      labels:
+        app: "cloudlabs-backend"
+    spec:
+      serviceAccountName: cloudlabs-ksa
+      containers:
+
+      - name: "guacd"
+        image: asia-southeast1-docker.pkg.dev/cloudlabs-387310/cloudlabs/guacd:latest
+        resources:
+          requests:
+            cpu: 750m # milicores
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+
+      - name: "server"
+        image: BACKEND_IMAGE
+        env:
+        - name: "FRONTEND_URL"
+          value: "https://cloudlabs.one"
+        - name: "CLOUDLABS_DOMAIN_NAME"
+          value: "cloudlabs.one"
+        - name: "GCP_BUCKET_NAME"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_bucket_name
+        - name: "GCP_PROJECT_ID"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_project_id
+        - name: "GCP_PROJECT_ZONE"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_project_zone
+        - name: "GCP_PROJECT_REGION"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_project_region
+        - name: "GCP_PROJECT_VPC"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_project_vpc
+        - name: "GCP_DISK_PROJECT"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_disk_project
+        - name: "GCP_STARTUP_DEBIAN"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_startup_debian
+        - name: "GCP_STARTUP_WINDOWS"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_startup_windows
+        - name: "GCP_SIGNING_SERVICE_ACCOUNT"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: gcp_signing_service_account
+        - name: "GUACD_HOSTNAME"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: guacd_hostname
+        - name: "GUACD_PORT"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: guacd_port
+        - name: "POSTGRESQL_URL"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: postgresql_url
+        - name: "POSTGRESQL_USER"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: postgresql_user
+        - name: "POSTGRESQL_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: postgresql_password
+        - name: "KEYSTORE_ALIAS"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: keystore_alias
+        - name: "KEYSTORE_LOCATION"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: keystore_location
+        - name: "KEYSTORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: keystore_password
+        - name: "PRIVATE_KEY_PASSPHRASE"
+          valueFrom:
+            secretKeyRef:
+              name: cloudlabs-secret
+              key: private_key_passphrase
+        ports:
+        - containerPort: 8080 # For health probe
+          name: serving-port
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /api/status/health
+            port: serving-port
+          failureThreshold: 1
+          periodSeconds: 20 # must be more than timeout
+          initialDelaySeconds: 60
+          timeoutSeconds: 10 # if time out exceed error increase this
+        readinessProbe:
+          httpGet:
+            path: /api/status/health
+            port: serving-port
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          failureThreshold: 3
+          timeoutSeconds: 10
+        startupProbe:
+          httpGet:
+            path: /api/status/health
+            port: serving-port
+          failureThreshold: 30
+          periodSeconds: 10
+          initialDelaySeconds: 20
+        resources:
+          requests:
+            cpu: 750m # milicores
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+
+      - name: cloud-sql-proxy
+        # It is recommended to use the latest version of the Cloud SQL Auth Proxy
+        # Make sure to update on a regular schedule!
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.1.0
+        args:
+          # If connecting from a VPC-native GKE cluster, you can use the
+          # following flag to have the proxy connect over private IP
+          # - "--private-ip"
+          - "--private-ip"
+
+          # Enable structured logging with LogEntry format:
+          - "--structured-logs"
+
+          # Replace DB_PORT with the port the proxy should listen on
+          # gcloud sql instances describe connectionName
+          - "--port=5432"
+          - "cloudlabs-387310:asia-southeast1:cloudlabs-db-dev"
+
+        securityContext:
+          # The default Cloud SQL Auth Proxy image runs as the
+          # "nonroot" user and group (uid: 65532) by default.
+          runAsNonRoot: true
+        # You should use resource requests/limits as a best practice to prevent
+        # pods from consuming too many resources and affecting the execution of
+        # other pods. You should adjust the following values based on what your
+        # application needs. For details, see
+        # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          requests:
+            # The proxy's memory use scales linearly with the number of active
+            # connections. Fewer open connections will use less memory. Adjust
+            # this value based on your application's requirements.
+            memory: "2Gi"
+            # The proxy's CPU use scales linearly with the amount of IO between
+            # the database and the application. Adjust this value based on your
+            # application's requirements.
+            cpu: "1"

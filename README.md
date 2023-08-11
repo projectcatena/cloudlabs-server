@@ -10,6 +10,9 @@ You may easily deploy a local instance of the project using docker/podman.
 # Build the docker image (include --progress=plain --no-cache to observe stdout)
 docker build  -t cloudlabs/server .
 
+# Run guacd
+docker run --name some-guacd -d -p 4822:4822 guacamole/guacd
+
 # Run the image on default port (or add --server.port=9000 for custom port)
 docker run -p 8080:8080 cloudlabs/server 
 ```
