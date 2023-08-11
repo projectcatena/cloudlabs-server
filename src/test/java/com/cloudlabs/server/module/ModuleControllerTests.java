@@ -99,6 +99,7 @@ public class ModuleControllerTests {
     }
 
     @Test
+    @WithUserDetails(value = "tester@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void createModule_whenValidParametersGiven() throws Exception {
         ModuleDTO request = new ModuleDTO();
         request.setModuleSubtitle("Subtitle");

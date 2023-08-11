@@ -110,7 +110,22 @@ public class ModuleServiceImpl implements ModuleService {
                     "Invalid Module details input");
         }
 
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        User user = userRepository.findByEmail(email).orElseThrow(
+            () -> new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Unrecoverable error, user not found"));
+        
+        Set<User> users = new HashSet<User>();
+        users.add(user);
+
         Module newModule = new Module(subtitle, title, description);
+        newModule.setUsers(users);
         Module savedEntity = repository.save(newModule);
 
         ModuleDTO createdModuleDTO = new ModuleDTO();
