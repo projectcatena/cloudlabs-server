@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -12,9 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -46,18 +45,28 @@ public class AdminControllerTest {
     private UserRepository userRepository;
 
     @BeforeAll
-    void createUser_withUserCredentialsOnly(@Autowired JdbcTemplate jdbcTemplate) throws Exception {
-        // clear database
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "users_roles");
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "user_table");
-        JdbcTestUtils.deleteFromTables(jdbcTemplate, "roles");
-        Role adminRole = new Role(RoleType.ADMIN);
-        Set<Role> roles = new HashSet<>(Arrays.asList(adminRole));
-        User user = new User("ComputeTutor", "computeTutor",
-                "computetutor@gmail.com", "Pa$$w0rd");
-        user.setRoles(roles);
-        userRepository.save(user);
-        
+    void setup() throws Exception {
+        User user = userRepository.findByEmail("administrator@gmail.com").orElse(null);
+            if (user == null) {
+                Role adminRole = roleRepository.findByName(RoleType.ADMIN);
+                Role tutorRole = null;
+                Role userRole = null;
+                if (adminRole == null) {
+                    adminRole = new Role(RoleType.ADMIN);
+                    tutorRole = new Role(RoleType.TUTOR);
+                    userRole = new Role(RoleType.USER);
+                }
+                Set<Role> roles = new HashSet<>(Arrays.asList(adminRole, tutorRole, userRole));
+                user = new User("Bobby", "administrator", "administrator@gmail.com", "Pa$$w0rd");
+                userRepository.save(user);
+                user.setRoles(roles);
+                userRepository.save(user);
+            }
+    }
+
+    @AfterAll
+    void teardown() throws Exception {
+        userRepository.deleteByEmail("administrator@gmail.com");
     }
 
     @Test
@@ -69,7 +78,7 @@ public class AdminControllerTest {
     @Test
     void addRole() throws Exception {
         UserDTO requestDTO = new UserDTO();
-        requestDTO.setEmail("tester@gmail.com");
+        requestDTO.setEmail("administrator@gmail.com");
         requestDTO.setNewRole("tutor");
 
         String jsonString = objectMapper.writeValueAsString(requestDTO);
@@ -84,8 +93,8 @@ public class AdminControllerTest {
     @Test
     void deleteRole() throws Exception{
         UserDTO requestDTO = new UserDTO();
-        requestDTO.setEmail("tester@gmail.com");
-        requestDTO.setNewRole("user");
+        requestDTO.setEmail("administrator@gmail.com");
+        requestDTO.setNewRole("tutor");
 
         String jsonString = objectMapper.writeValueAsString(requestDTO);
 
