@@ -137,7 +137,7 @@ public class SnapshotControllerTests {
     void setup() throws Exception {
         SubnetDTO request = new SubnetDTO();
         request.setSubnetName("test-subnet-snapshot");
-        request.setIpv4Range("10.254.3.0/24");
+        request.setIpv4Range("10.254.199.0/24");
         subnetService.createSubnet(request);
 
         User user = userRepository.findByEmail("snapshot@gmail.com").orElse(null);
@@ -158,8 +158,8 @@ public class SnapshotControllerTests {
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteByEmail("snapshot@gmail.com");
         subnetService.deleteSubnet("test-subnet-snapshot");
+        userRepository.deleteByEmail("snapshot@gmail.com");
     }
     
     @Test
@@ -242,7 +242,9 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-        this.mockMvc.perform(MockMvcRequestBuilders.get("/snapshot/list"))
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/snapshot/list")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
         deleteAfterUse(jsonString, response);

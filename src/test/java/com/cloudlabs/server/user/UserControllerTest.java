@@ -60,7 +60,7 @@ public class UserControllerTest {
                                 adminRole = new Role(RoleType.ADMIN);
                         }
                         Set<Role> roles = new HashSet<>(Arrays.asList(tutorRole,adminRole));
-                        user = new User("Bobby", "tutor", "yalwa@gmail.com", passwordEncoder.encode("Pa$$w0rd"));
+                        user = new User("Bobby", "yalwa", "yalwa@gmail.com", passwordEncoder.encode("Pa$$w0rd"));
                         userRepository.save(user);
                         user.setRoles(roles);
                         userRepository.save(user);
@@ -71,7 +71,7 @@ public class UserControllerTest {
     @AfterAll
     void teardown() {
         userRepository.deleteByEmail("yalwa@gmail.com");
-        roleRepository.delete(new Role(RoleType.USER));
+        roleRepository.delete(new Role(RoleType.TUTOR));
         roleRepository.delete(new Role(RoleType.ADMIN));
     }
 
@@ -92,7 +92,7 @@ public class UserControllerTest {
 
         UserDTO userDTO = new UserDTO();
         userDTO.setFullname("test");
-        userDTO.setUsername("test");
+        userDTO.setUsername("yalwa2");
         userDTO.setEmail("yalwa@gmail.com");
         userDTO.setCurrentPassword("Pa$$w0rd");
         userDTO.setNewPassword("Test@123");
