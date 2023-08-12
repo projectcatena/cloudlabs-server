@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -32,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @TestInstance(Lifecycle.PER_CLASS)
-@WithMockUser(username = "tutor", roles = { "USER" })
+@WithMockUser(username = "tutor", roles = { "ADMIN", "USER" })
 public class UserControllerTest {
     @Autowired
     protected MockMvc mockMvc;
@@ -49,8 +48,8 @@ public class UserControllerTest {
     private RoleRepository roleRepository;
 
     @BeforeAll
-    void setup(@Autowired JdbcTemplate jdbcTemplate) {
-        User user = userRepository.findByEmail("user@gmail.com").orElse(null);
+    void setup() {
+        User user = userRepository.findByEmail("yalwa@gmail.com").orElse(null);
                 if (user == null) {
                         Role tutorRole = roleRepository.findByName(RoleType.TUTOR);
                         Role adminRole = roleRepository.findByName(RoleType.ADMIN);
@@ -61,7 +60,7 @@ public class UserControllerTest {
                                 adminRole = new Role(RoleType.ADMIN);
                         }
                         Set<Role> roles = new HashSet<>(Arrays.asList(tutorRole,adminRole));
-                        user = new User("Bobby", "tutor", "user@gmail.com", "Pa$$w0rd");
+                        user = new User("Bobby", "tutor", "yalwa@gmail.com", passwordEncoder.encode("Pa$$w0rd"));
                         userRepository.save(user);
                         user.setRoles(roles);
                         userRepository.save(user);
@@ -71,15 +70,15 @@ public class UserControllerTest {
 
     @AfterAll
     void teardown() {
-        userRepository.deleteByEmail("user@gmail.com");
+        userRepository.deleteByEmail("yalwa@gmail.com");
         roleRepository.delete(new Role(RoleType.USER));
         roleRepository.delete(new Role(RoleType.ADMIN));
     }
 
     @Test
-    @WithUserDetails(value = "user@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "yalwa@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void retrieveUserDetails() throws Exception {
-        User user = userRepository.findByEmail("user@gmail.com").get();
+        User user = userRepository.findByEmail("yalwa@gmail.com").get();
 
         this.mockMvc
                 .perform(
@@ -88,13 +87,13 @@ public class UserControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "yalwa@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void updateUserDetails() throws Exception {
 
         UserDTO userDTO = new UserDTO();
         userDTO.setFullname("test");
         userDTO.setUsername("test");
-        userDTO.setEmail("user@gmail.com");
+        userDTO.setEmail("yalwa@gmail.com");
         userDTO.setCurrentPassword("Pa$$w0rd");
         userDTO.setNewPassword("Test@123");
 
@@ -106,7 +105,7 @@ public class UserControllerTest {
                         .content(jsonString))
                 .andExpect(MockMvcResultMatchers.status().isOk());
 
-        LoginDTO loginDTO = new LoginDTO("user@gmail.com", "Test@123");
+        LoginDTO loginDTO = new LoginDTO("yalwa@gmail.com", "Test@123");
 
         String loginJsonString = objectMapper.writeValueAsString(loginDTO);
 
@@ -118,7 +117,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "yalwa@gmail.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void deleteUser() throws Exception {
         // create user to be deleted
         User user = userRepository.findByEmail("delete@gmail.com").orElse(null);
@@ -128,7 +127,7 @@ public class UserControllerTest {
                                 tutorRole = new Role(RoleType.TUTOR);
                         }
                         Set<Role> roles = new HashSet<>(Arrays.asList(tutorRole));
-                        user = new User("delete", "delete", "delete@gmail.com", "Pa$$w0rd");
+                        user = new User("delete", "delete", "delete@gmail.com", passwordEncoder.encode("Pa$$w0rd"));
                         userRepository.save(user);
                         user.setRoles(roles);
                         userRepository.save(user);
