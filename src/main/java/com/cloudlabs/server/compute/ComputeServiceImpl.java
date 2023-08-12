@@ -465,7 +465,7 @@ public class ComputeServiceImpl implements ComputeService {
             OperationFuture<Operation, Operation> operation = instancesClient.insertAsync(insertInstanceRequest);
 
             // Wait for the operation to complete.
-            Operation response = operation.get(5, TimeUnit.MINUTES);
+            Operation response = operation.get(3, TimeUnit.MINUTES);
 
             if (response.hasError()) {
                 return null;
