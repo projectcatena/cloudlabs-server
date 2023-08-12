@@ -306,7 +306,13 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        // delete module after done
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+        
+            // delete module after done
         mockMvc
             .perform(MockMvcRequestBuilders.delete(String.format(
                     "/Modules/delete/%s", moduleResponse.getModuleId())))
