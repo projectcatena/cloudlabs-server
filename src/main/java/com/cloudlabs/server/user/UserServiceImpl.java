@@ -40,11 +40,10 @@ public class UserServiceImpl implements UserService {
 
         String email = authenticationToken.getName();
 
-        Optional<User> option = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email).get();
 
         UserDTO result = new UserDTO();
-        option.ifPresent((user) -> {
-            if (userDTO.getCurrentPassword() == null) { // no password change
+        if (userDTO.getCurrentPassword() == null) { // no password change
                 user.setEmail(userDTO.getEmail());
                 user.setFullname(userDTO.getFullname());
                 user.setUsername(userDTO.getUsername());
@@ -54,19 +53,26 @@ public class UserServiceImpl implements UserService {
                     user.setEmail(userDTO.getEmail());
                     user.setFullname(userDTO.getFullname());
                     user.setUsername(userDTO.getUsername());
-                    user.setPassword(passwordEncoder.encode(
-                            userDTO.getNewPassword())); // set new password
+                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword())); // set new password
 
                 } else {
-                    throw new Error("Wrong password");
+                    return null;
                 }
             }
             userRepository.save(user);
             result.setEmail(user.getEmail());
             result.setFullname(user.getFullname());
             result.setUsername(user.getUsername());
-        });
 
         return result;
+    }
+
+    public Boolean deleteUser(UserDTO userDTO) {
+        User user = userRepository.findByEmail(userDTO.getEmail()).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        userRepository.delete(user);
+        return true;
     }
 }
