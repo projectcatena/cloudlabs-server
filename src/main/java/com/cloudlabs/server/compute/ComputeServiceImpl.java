@@ -15,7 +15,6 @@ import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -466,7 +465,7 @@ public class ComputeServiceImpl implements ComputeService {
             OperationFuture<Operation, Operation> operation = instancesClient.insertAsync(insertInstanceRequest);
 
             // Wait for the operation to complete.
-            Operation response = operation.get(3, TimeUnit.MINUTES);
+            Operation response = operation.get(5, TimeUnit.MINUTES);
 
             if (response.hasError()) {
                 return null;

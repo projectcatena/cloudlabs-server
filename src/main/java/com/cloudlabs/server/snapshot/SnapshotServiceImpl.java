@@ -13,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.cloudlabs.server.compute.Compute;
+import com.cloudlabs.server.compute.ComputeRepository;
 import com.cloudlabs.server.compute.ComputeService;
 import com.cloudlabs.server.compute.dto.ComputeDTO;
 import com.cloudlabs.server.snapshot.dto.SaveSnapshotDTO;
@@ -65,14 +67,37 @@ public class SnapshotServiceImpl implements SnapshotService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ComputeRepository computeRepository;
+
     @Override
-    public SaveSnapshotDTO createSnapshot(String snapshotName, String diskName, String description)
+    public SaveSnapshotDTO createSnapshot(SaveSnapshotDTO saveSnapshotDTO)
         throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         // Initialize client that will be used to send requests. This client only needs to be created
         // once, and can be reused for multiple requests. After completing all of your requests, call
         // the `snapshotsClient.close()` method on the client to safely
         // clean up any remaining background resources.
+        
+        // Get current user from security context
+        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String email = authenticationToken.getName();
+
+        String snapshotName = saveSnapshotDTO.getSnapshotName();
+        String diskName = saveSnapshotDTO.getInstanceName();
+        String description = saveSnapshotDTO.getDescription();
+
+        // get compute instance
+        Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, saveSnapshotDTO.getInstanceName())
+            .orElse(null);
+
+        if (compute == null) {
+            return null;
+        }
+
         try (SnapshotsClient snapshotsClient = SnapshotsClient.create()) {
 
         if (zone.isEmpty() && region.isEmpty()) {
@@ -127,59 +152,69 @@ public class SnapshotServiceImpl implements SnapshotService {
         Snapshot snapshot = snapshotsClient.get(projectId, snapshotName);
         System.out.println(String.format("Snapshot created: %s", snapshot.getName()));
 
-        // Get current user from security context
-        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication();
-
-        String email = authenticationToken.getName();
-        System.out.println(email);
-
         // Find user by email
         User user = userRepository.findByEmail(email).get();
         System.out.println(user.getFullname());
-        SaveSnapshot saveSnapshot = new SaveSnapshot(snapshotName, description, user);
+        SaveSnapshot saveSnapshot = new SaveSnapshot(snapshotName, description, user, compute.getInstanceName());
         snapshotRepository.save(saveSnapshot);
 
-        SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO(snapshotName, description, diskName)
-;
-        return saveSnapshotDTO;
+        SaveSnapshotDTO returnDTO = new SaveSnapshotDTO(snapshotName, description, diskName); // diskName = instanceName
+        return returnDTO;
 
         }
     }
 
     // Delete a snapshot of a disk.
     @Override
-    public SaveSnapshotDTO deleteSnapshot(String snapshotName)
+    public SaveSnapshotDTO deleteSnapshot(SaveSnapshotDTO saveSnapshotDTO)
         throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        SaveSnapshot saveSnapshot = snapshotRepository.findBySnapshotName(snapshotName);
-        // Initialize client that will be used to send requests. This client only needs to be created
-        // once, and can be reused for multiple requests. After completing all of your requests, call
-        // the `snapshotsClient.close()` method on the client to safely
-        // clean up any remaining background resources.
-        try (SnapshotsClient snapshotsClient = SnapshotsClient.create()) {
+            // Initialize client that will be used to send requests. This client only needs to be created
+            // once, and can be reused for multiple requests. After completing all of your requests, call
+            // the `snapshotsClient.close()` method on the client to safely
+            // clean up any remaining background resources.
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                .getContext()
+                .getAuthentication();
 
-        Operation operation = snapshotsClient.deleteAsync(projectId, snapshotName)
-            .get(3, TimeUnit.MINUTES);
+            String email = authenticationToken.getName();
+            String snapshotName = saveSnapshotDTO.getSnapshotName();
+            String computeInstance = saveSnapshotDTO.getInstanceName();
 
-        if (operation.hasError()) {
-            System.out.println("Snapshot deletion failed!" + operation);
-            return null;
-        }
+            Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, computeInstance)
+                .orElse(null);
 
-        snapshotRepository.delete(saveSnapshot);
+            SaveSnapshot saveSnapshot = snapshotRepository.findBySnapshotNameAndInstanceName(snapshotName, compute.getInstanceName())
+                .orElse(null);
+            
+            if (saveSnapshot == null) {
+                System.out.println("no snapshot");
+                return null;
+            }
 
-        System.out.println("Snapshot deleted!");
-        }
+            try (SnapshotsClient snapshotsClient = SnapshotsClient.create()) {
 
-        SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO();
-        saveSnapshotDTO.setSnapshotName(snapshotName);
+            Operation operation = snapshotsClient.deleteAsync(projectId, snapshotName)
+                .get(3, TimeUnit.MINUTES);
 
-        return saveSnapshotDTO;
+            if (operation.hasError()) {
+                System.out.println("Snapshot deletion failed!" + operation);
+                return null;
+            }
+
+            snapshotRepository.delete(saveSnapshot);
+
+            System.out.println("Snapshot deleted!");
+            }
+
+            SaveSnapshotDTO returnDTO = new SaveSnapshotDTO();
+            returnDTO.setSnapshotName(snapshotName);
+            returnDTO.setInstanceName(computeInstance);
+
+            return returnDTO;
     }
 
     @Override
-    public List<SaveSnapshotDTO> listSnapshots() throws IOException { //String snapshotName
+    public List<SaveSnapshotDTO> listSnapshots(SaveSnapshotDTO saveSnapshotDTO) throws IOException { //String snapshotName
         
         // Get email from Jwt token using context
         UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
@@ -187,8 +222,18 @@ public class SnapshotServiceImpl implements SnapshotService {
                 .getAuthentication();
 
         String email = authenticationToken.getName();
+        System.out.println(email);
+        System.out.println(saveSnapshotDTO.getInstanceName());
 
-        List<SaveSnapshot> snapshotList = snapshotRepository.findByUser_Email(email);
+        Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, saveSnapshotDTO.getInstanceName())
+            .orElse(null);
+
+        if (compute == null) {
+            System.out.println("no instance");
+            return null;
+        }
+
+        List<SaveSnapshot> snapshotList = snapshotRepository.findByUser_EmailAndInstanceName(email, compute.getInstanceName());
 
         List<SaveSnapshotDTO> saveSnapshotDtos = new ArrayList<>();
 
@@ -196,6 +241,7 @@ public class SnapshotServiceImpl implements SnapshotService {
             SaveSnapshotDTO saveSnapshotDto = new SaveSnapshotDTO();
             saveSnapshotDto.setSnapshotName(i.getSnapshotName());
             saveSnapshotDto.setDescription(i.getDescription());
+            saveSnapshotDto.setInstanceName(i.getInstanceName());
             saveSnapshotDtos.add(saveSnapshotDto);
         }
 
@@ -261,8 +307,24 @@ public class SnapshotServiceImpl implements SnapshotService {
    * form of: "projects/{project_name}/global/snapshots/{snapshot_name}"
    * @return Instance object.
    */
-    public ComputeDTO createFromSnapshot(String instanceName, String snapshotName)
+    public ComputeDTO createFromSnapshot(SaveSnapshotDTO saveSnapshotDTO)
         throws IOException, InterruptedException, ExecutionException, TimeoutException {
+            // Get email from Jwt token using context
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication();
+
+            String email = authenticationToken.getName();
+            String instanceName = saveSnapshotDTO.getInstanceName();
+            String snapshotName = saveSnapshotDTO.getSnapshotName();
+
+            Compute compute = computeRepository.findByUsers_EmailAndInstanceName(email, instanceName).get();
+
+            SaveSnapshot saveSnapshot = snapshotRepository.findBySnapshotNameAndInstanceName(snapshotName, compute.getInstanceName())
+                .orElse(null);
+                if (saveSnapshot == null) {
+                    return null;
+                }
             // Get computeDTO
             ComputeDTO computeDTO = computeService.getComputeInstance(instanceName);
             
