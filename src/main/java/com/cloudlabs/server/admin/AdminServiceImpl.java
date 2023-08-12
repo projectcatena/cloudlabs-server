@@ -1,20 +1,23 @@
 package com.cloudlabs.server.admin;
 
-import com.cloudlabs.server.role.Role;
-import com.cloudlabs.server.role.RoleRepository;
-import com.cloudlabs.server.role.dto.RoleDTO;
-import com.cloudlabs.server.user.User;
-import com.cloudlabs.server.user.UserRepository;
-import com.cloudlabs.server.user.dto.UserDTO;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.cloudlabs.server.role.Role;
+import com.cloudlabs.server.role.RoleRepository;
+import com.cloudlabs.server.role.RoleType;
+import com.cloudlabs.server.role.dto.RoleDTO;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
+import com.cloudlabs.server.user.dto.UserDTO;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -44,30 +47,47 @@ public class AdminServiceImpl implements AdminService {
     }
 
     public UserDTO setNewRole(UserDTO userDTO) {
-        Optional<User> option = userRepository.findByEmail(userDTO.getEmail());
+        User user = userRepository.findByEmail(userDTO.getEmail()).orElse(null);
 
-        UserDTO returnUserDTO = new UserDTO();
-        option.ifPresent((user) -> {
-            Role role = roleRepository.findByName(userDTO.getNewRole());
-            if (user.getRoles().contains(role)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "User has this role");
+        if (user == null) {
+            return null;
+        }
+
+        Role role = roleRepository.findByName(userDTO.getNewRole());
+
+        if (role == null) {
+            if (userDTO.getNewRole().toString().toUpperCase() == "USER") {
+                role = new Role(RoleType.USER);
             }
-            Set<Role> newRoles = user.getRoles();
-            newRoles.add(role);
+            else if (userDTO.getNewRole().toString().toUpperCase() == "TUTOR") {
+                role = new Role(RoleType.TUTOR);
+            }
+            else {
+                role = new Role(RoleType.ADMIN);
+            }
+            
+        }
 
-            user.setRoles(newRoles);
-            userRepository.save(user);
+        if (user.getRoles().contains(role)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "User has this role");
+        }
 
-            returnUserDTO.setFullname(user.getFullname());
-            returnUserDTO.setUsername(user.getUserName());
-            returnUserDTO.setEmail(user.getEmail());
-            returnUserDTO.setRoles(
-                    user.getRoles()
-                            .stream()
-                            .map(userRole -> new RoleDTO(userRole.getName()))
-                            .collect(Collectors.toList()));
-        });
+        Set<Role> newRoles = user.getRoles();
+        newRoles.add(role);
+
+        user.setRoles(newRoles);
+        userRepository.save(user);
+        
+        UserDTO returnUserDTO = new UserDTO();
+        returnUserDTO.setFullname(user.getFullname());
+        returnUserDTO.setUsername(user.getUserName());
+        returnUserDTO.setEmail(user.getEmail());
+        returnUserDTO.setRoles(
+                user.getRoles()
+                        .stream()
+                        .map(userRole -> new RoleDTO(userRole.getName()))
+                        .collect(Collectors.toList()));
 
         return returnUserDTO;
     }
