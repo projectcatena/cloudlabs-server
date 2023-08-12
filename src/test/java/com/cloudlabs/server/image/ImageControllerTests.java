@@ -37,6 +37,7 @@ public class ImageControllerTests {
     void getSignedURL_whenFileTypeIsVMDK() throws Exception {
         ImageDTO image = new ImageDTO();
         image.setObjectName("virtual-disk.vmdk");
+        image.setOperatingSystem("debian-11");
 
         String jsonString = objectMapper.writeValueAsString(image);
         this.mockMvc
@@ -54,6 +55,7 @@ public class ImageControllerTests {
     void getSignedURL_whenFileTypeIsVHD() throws Exception {
         ImageDTO image = new ImageDTO();
         image.setObjectName("virtual-disk.vhd");
+        image.setOperatingSystem("debian-11");
 
         String jsonString = objectMapper.writeValueAsString(image);
         this.mockMvc
@@ -72,6 +74,7 @@ public class ImageControllerTests {
     void failGetSignedURL_whenFileTypeIsVHD_ButRoleIsUser() throws Exception {
         ImageDTO image = new ImageDTO();
         image.setObjectName("image.vhd");
+        image.setOperatingSystem("debian-11");
 
         String jsonString = objectMapper.writeValueAsString(image);
         this.mockMvc
@@ -85,6 +88,7 @@ public class ImageControllerTests {
     void failGetSignedURL_whenFileTypeIsNotVMDKOrVHD() throws Exception {
         ImageDTO image = new ImageDTO();
         image.setObjectName("image.img");
+        image.setOperatingSystem("debian-11");
 
         String jsonString = objectMapper.writeValueAsString(image);
         this.mockMvc
@@ -98,6 +102,7 @@ public class ImageControllerTests {
     void failGetSignedURL_whenNoFileType() throws Exception {
         ImageDTO image = new ImageDTO();
         image.setObjectName("image");
+        image.setOperatingSystem("debian-11");
 
         String jsonString = objectMapper.writeValueAsString(image);
         this.mockMvc
@@ -129,7 +134,7 @@ public class ImageControllerTests {
         ImageDTO image = new ImageDTO();
         // Test image must already exist in GCP bucket
         image.setObjectName("Windows_Server_2019-disk1.vmdk");
-        image.setImageName("windows-server-2019");
+        image.setOperatingSystem("windows-2019");
 
         String jsonString = objectMapper.writeValueAsString(image);
         MvcResult response = mockMvc
@@ -139,8 +144,6 @@ public class ImageControllerTests {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.objectName")
                         .value(image.getObjectName()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.imageName")
-                        .value(image.getImageName()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.buildId").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus")
                         .value("QUEUED"))

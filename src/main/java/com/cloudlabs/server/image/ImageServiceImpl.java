@@ -68,7 +68,7 @@ public class ImageServiceImpl implements ImageService {
      */
     public ImageDTO generateV4PutObjectSignedUrl(String objectName,
             String operatingSystem) {
-        if (objectName == null) {
+        if (objectName.isBlank() || operatingSystem.isBlank()) {
             return null;
         }
 
