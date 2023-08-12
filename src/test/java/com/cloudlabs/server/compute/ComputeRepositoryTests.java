@@ -1,16 +1,13 @@
 package com.cloudlabs.server.compute;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.cloudlabs.server.subnet.Subnet;
-import com.cloudlabs.server.subnet.SubnetRepository;
-import com.cloudlabs.server.user.User;
-import com.cloudlabs.server.user.UserRepository;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -18,6 +15,11 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import com.cloudlabs.server.subnet.Subnet;
+import com.cloudlabs.server.subnet.SubnetRepository;
+import com.cloudlabs.server.user.User;
+import com.cloudlabs.server.user.UserRepository;
 
 @SpringBootTest
 @TestInstance(Lifecycle.PER_CLASS)
@@ -38,9 +40,9 @@ public class ComputeRepositoryTests {
         Set<User> users = new HashSet<>();
 
         User user = new User();
-        user.setUsername("test");
+        user.setUsername("computeRepo");
         user.setFullname("Bob");
-        user.setEmail("test@gmail.com");
+        user.setEmail("computerepo@gmail.com");
         // encrypt the password using spring security
         user.setPassword("test@123");
 
@@ -48,9 +50,9 @@ public class ComputeRepositoryTests {
 
         // Make a valid 2nd user to query
         User user2 = new User();
-        user2.setUsername("test2");
+        user2.setUsername("computeRepo2");
         user2.setFullname("John");
-        user2.setEmail("test2@gmail.com");
+        user2.setEmail("computerepo2@gmail.com");
         // encrypt the password using spring security
         user2.setPassword("test@123");
         userRepository.save(user2);
@@ -70,22 +72,22 @@ public class ComputeRepositoryTests {
     @AfterAll
     void cleanup() {
         computeRepository.deleteByInstanceName("test");
-        User user1 = userRepository.findByEmail("test@gmail.com").get();
-        User user2 = userRepository.findByEmail("test2@gmail.com").get();
+        User user1 = userRepository.findByEmail("computerepo@gmail.com").get();
+        User user2 = userRepository.findByEmail("computerepo2@gmail.com").get();
         userRepository.deleteAll(Arrays.asList(user1, user2));
         subnetRepository.deleteBySubnetName("test-subnet-compute-repo");
     }
 
     @Test
     void listUserComputeInstances_whenEmailGiven() {
-        List<Compute> computeInstances = computeRepository.findByUsers_Email("test@gmail.com");
+        List<Compute> computeInstances = computeRepository.findByUsers_Email("computerepo@gmail.com");
 
         assertFalse(computeInstances.isEmpty());
         assertThat(computeInstances)
                 .extracting(Compute::getUsers)
                 .anySatisfy(users -> assertThat(users)
                         .extracting(User::getEmail)
-                        .anyMatch(value -> value.matches("test@gmail.com")));
+                        .anyMatch(value -> value.matches("computerepo@gmail.com")));
     }
 
     @Test
@@ -96,13 +98,13 @@ public class ComputeRepositoryTests {
     @Test
     void findCompute_whenUserAndInstanceNameGiven() {
         assertThat(computeRepository
-                .findByUsers_EmailAndInstanceName("test@gmail.com", "test")
+                .findByUsers_EmailAndInstanceName("computerepo@gmail.com", "test")
                 .isPresent());
     }
 
     @Test
     void emptyListUserComputeInstances_whenEmailGivenAndUserIsNotAssignedAnyComputeInstances() {
-        List<Compute> computeInstances = computeRepository.findByUsers_Email("test2@gmail.com");
+        List<Compute> computeInstances = computeRepository.findByUsers_Email("computerepo2@gmail.com");
 
         assertThat(computeInstances.isEmpty());
     }

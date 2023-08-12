@@ -119,24 +119,26 @@ public class SnapshotControllerTests {
     }
 
     void deleteAfterUse(String jsonString, ComputeDTO response) throws Exception {
-         // Delete instance and release its public IP Address after test
-        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(response)))
-        .andExpect(MockMvcResultMatchers.status().isOk());
-
         //Delete snapshot after testing
         this.mockMvc.perform(MockMvcRequestBuilders.delete("/snapshot/delete")
         .contentType(MediaType.APPLICATION_JSON)
         .content(jsonString))
         .andExpect(MockMvcResultMatchers.status().isOk());
 
-        //userRepository.deleteByEmail("computetutor@gmail.com");
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
         
     }
 
     @BeforeAll
     void setup() throws Exception {
+        SubnetDTO request = new SubnetDTO();
+        request.setSubnetName("test-subnet-snapshot");
+        request.setIpv4Range("10.254.199.0/24");
+        subnetService.createSubnet(request);
 
         User user = userRepository.findByEmail("snapshot@gmail.com").orElse(null);
             if (user == null) {
@@ -150,18 +152,14 @@ public class SnapshotControllerTests {
                 user.setRoles(roles);
                 userRepository.save(user);
             }
-        
-        SubnetDTO request = new SubnetDTO();
-        request.setSubnetName("test-subnet-snapshot");
-        request.setIpv4Range("10.254.3.0/24");
-        subnetService.createSubnet(request);
+
     }
 
 
     @AfterAll
     void teardown() throws Exception {
-        userRepository.deleteByEmail("snapshot@gmail.com");
         subnetService.deleteSubnet("test-subnet-snapshot");
+        userRepository.deleteByEmail("snapshot@gmail.com");
     }
     
     @Test
@@ -171,7 +169,7 @@ public class SnapshotControllerTests {
         ComputeDTO response = createInstance("test-instance-for-create-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-1-success",
-        "", response.getInstanceName());
+        "something", response.getInstanceName());
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
@@ -180,6 +178,8 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
+        System.out.println(jsonString);
+        System.out.println(response);
         deleteAfterUse(jsonString, response);
 
         // delete module after done
@@ -197,7 +197,7 @@ public class SnapshotControllerTests {
         ComputeDTO response = createInstance("test-instance-for-delete-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-2-success",
-        "", response.getInstanceName());
+        "something", response.getInstanceName());
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
@@ -233,7 +233,7 @@ public class SnapshotControllerTests {
         ComputeDTO response = createInstance("test-instance-for-list-snapshot", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-0",
-        "", response.getInstanceName());
+        "something", response.getInstanceName());
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
@@ -242,7 +242,9 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
-        this.mockMvc.perform(MockMvcRequestBuilders.get("/snapshot/list"))
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/snapshot/list")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isOk());
         
         deleteAfterUse(jsonString, response);
@@ -262,7 +264,7 @@ public class SnapshotControllerTests {
         ComputeDTO response = createInstance("test-instance-for-revert-snapshot-success", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-3-success",
-        "", response.getInstanceName());
+        "something", response.getInstanceName());
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
@@ -294,7 +296,7 @@ public class SnapshotControllerTests {
         ComputeDTO response = createInstance("test-instance-for-revert-snapshot-failure", moduleResponse);
 
         SaveSnapshotDTO saveSnapshotDTO = new SaveSnapshotDTO("snapshot-3-failure",
-        "", response.getInstanceName());
+        "something", response.getInstanceName());
 
         String jsonString = objectMapper.writeValueAsString(saveSnapshotDTO);
 
@@ -304,7 +306,13 @@ public class SnapshotControllerTests {
             .content(jsonString))
             .andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        // delete module after done
+         // Delete instance and release its public IP Address after test
+        this.mockMvc.perform((MockMvcRequestBuilders.post("/compute/delete"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(response)))
+        .andExpect(MockMvcResultMatchers.status().isOk());
+        
+            // delete module after done
         mockMvc
             .perform(MockMvcRequestBuilders.delete(String.format(
                     "/Modules/delete/%s", moduleResponse.getModuleId())))
