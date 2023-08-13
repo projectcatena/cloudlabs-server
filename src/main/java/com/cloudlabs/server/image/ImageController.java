@@ -29,7 +29,8 @@ public class ImageController {
     @PostMapping("/signed")
     public ImageDTO generatev4PutObjectSignedUrl(@RequestBody ImageDTO image) {
 
-        ImageDTO response = imageService.generateV4PutObjectSignedUrl(image.getObjectName());
+        ImageDTO response = imageService.generateV4PutObjectSignedUrl(
+                image.getObjectName(), image.getOperatingSystem());
 
         if (response == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -38,19 +39,19 @@ public class ImageController {
         return response;
     }
 
-    @PostMapping("/start")
-    public BuildImageDTO startVirtualDiskBuild(@RequestBody ImageDTO image)
-            throws InterruptedException, ExecutionException, IOException {
-
-        BuildImageDTO response = imageService.startVirtualDiskBuild(
-                image.getObjectName(), image.getImageName());
-
-        if (response == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-
-        return response;
-    }
+    // @PostMapping("/start")
+    // public BuildImageDTO startVirtualDiskBuild(@RequestBody ImageDTO image)
+    // throws InterruptedException, ExecutionException, IOException {
+    //
+    // BuildImageDTO response = imageService.startVirtualDiskBuild(
+    // image.getObjectName(), image.getImageName());
+    //
+    // if (response == null) {
+    // throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    // }
+    //
+    // return response;
+    // }
 
     @PostMapping("/cancel")
     public BuildImageDTO cancelVirtualDiskBuild(@RequestBody BuildImageDTO image)
