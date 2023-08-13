@@ -40,7 +40,7 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public UserDTO addRole(@RequestBody UserDTO userDTO) throws IOException {
         UserDTO result = adminService.setNewRole(userDTO);
-        if (result.equals(null)){
+        if (result == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to add role");
         }
         return result;
@@ -50,6 +50,9 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public UserDTO deleteRole(@RequestBody UserDTO userDTO) throws IOException {
         UserDTO result = adminService.deleteRole(userDTO);
+        if (result == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to delete role");
+        }
         return result;
     }
 }
