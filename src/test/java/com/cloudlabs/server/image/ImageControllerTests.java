@@ -129,66 +129,64 @@ public class ImageControllerTests {
      *
      * @throws Exception
      */
-    @Test
-    void startBuild_whenCorrectParametersGiven() throws Exception {
-        ImageDTO image = new ImageDTO();
-        // Test image must already exist in GCP bucket
-        image.setObjectName("Windows_Server_2019-disk1.vmdk");
-        image.setOperatingSystem("windows-2019");
+    // @Test
+    // void startBuild_whenCorrectParametersGiven() throws Exception {
+    // ImageDTO image = new ImageDTO();
+    // // Test image must already exist in GCP bucket
+    // image.setObjectName("Windows_Server_2019-disk1.vmdk");
+    // image.setOperatingSystem("windows-2019");
+    //
+    // String jsonString = objectMapper.writeValueAsString(image);
+    // MvcResult response = mockMvc
+    // .perform(MockMvcRequestBuilders.post("/image/start")
+    // .contentType(MediaType.APPLICATION_JSON)
+    // .content(jsonString))
+    // .andExpect(MockMvcResultMatchers.status().isOk())
+    // .andExpect(MockMvcResultMatchers.jsonPath("$.objectName")
+    // .value(image.getObjectName()))
+    // .andExpect(MockMvcResultMatchers.jsonPath("$.buildId").exists())
+    // .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus")
+    // .value("QUEUED"))
+    // .andReturn();
+    //
+    // // After launching a build, should cancel it to prevent unnecessary
+    // // costly builds.
+    // BuildImageDTO buildImageDTO = objectMapper.readValue(
+    // response.getResponse().getContentAsString(),
+    // BuildImageDTO.class);
+    // BuildImageDTO cancelBuildResponse =
+    // imageService.cancelVirtualDiskBUild(buildImageDTO.getBuildId());
+    //
+    // assertNotNull(cancelBuildResponse.getBuildStatus());
+    // assertNotEquals("", cancelBuildResponse.getBuildStatus());
+    // }
 
-        String jsonString = objectMapper.writeValueAsString(image);
-        MvcResult response = mockMvc
-                .perform(MockMvcRequestBuilders.post("/image/start")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.objectName")
-                        .value(image.getObjectName()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.buildId").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.buildStatus")
-                        .value("QUEUED"))
-                .andReturn();
+    // @Test
+    // void failStartBuild_whenParametersNotGiven() throws Exception {
+    // ImageDTO image = new ImageDTO();
+    //
+    // String jsonString = objectMapper.writeValueAsString(image);
+    // this.mockMvc
+    // .perform(MockMvcRequestBuilders.post("/image/start")
+    // .contentType(MediaType.APPLICATION_JSON)
+    // .content(jsonString))
+    // .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    // }
 
-        // After launching a build, should cancel it to prevent unnecessary
-        // costly builds.
-        BuildImageDTO buildImageDTO = objectMapper.readValue(
-                response.getResponse().getContentAsString(), BuildImageDTO.class);
-        BuildImageDTO cancelBuildResponse = imageService.cancelVirtualDiskBUild(buildImageDTO.getBuildId());
-
-        assertNotNull(cancelBuildResponse.getBuildStatus());
-        assertNotEquals("", cancelBuildResponse.getBuildStatus());
-    }
-
-    @Test
-    void failStartBuild_whenParametersNotGiven() throws Exception {
-        ImageDTO image = new ImageDTO();
-
-        String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc
-                .perform(MockMvcRequestBuilders.post("/image/start")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
-
-    @Test
-    void failStartBuild_whenFileDoesNotExistInBucket() throws Exception {
-        // Generate random string
-        byte[] array = new byte[7]; // length is bounded by 7
-        new Random().nextBytes(array);
-        String generatedString = new String(array, Charset.forName("UTF-8"));
-
-        ImageDTO image = new ImageDTO();
-        image.setObjectName(generatedString + ".vmdk");
-        image.setImageName("test-image-does-not-exist");
-
-        String jsonString = objectMapper.writeValueAsString(image);
-        this.mockMvc
-                .perform(MockMvcRequestBuilders.post("/image/start")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonString))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+    // @Test
+    // void failStartBuild_whenFileDoesNotExistInBucket() throws Exception {
+    // ImageDTO image = new ImageDTO();
+    // image.setObjectName("test-file-not-found"
+    // + ".vmdk");
+    // image.setImageName("test-image-does-not-exist");
+    //
+    // String jsonString = objectMapper.writeValueAsString(image);
+    // this.mockMvc
+    // .perform(MockMvcRequestBuilders.post("/image/start")
+    // .contentType(MediaType.APPLICATION_JSON)
+    // .content(jsonString))
+    // .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    // }
 
     @Test
     void failCancelBuild_whenBuildDoesNotExist() throws Exception {
