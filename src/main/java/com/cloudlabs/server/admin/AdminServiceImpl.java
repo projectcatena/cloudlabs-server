@@ -2,7 +2,6 @@ package com.cloudlabs.server.admin;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -93,35 +92,29 @@ public class AdminServiceImpl implements AdminService {
     }
 
     public UserDTO deleteRole(UserDTO userDto) {
-        Optional<User> option = userRepository.findByEmail(userDto.getEmail());
+        User user = userRepository.findByEmail(userDto.getEmail()).orElse(null);
+        Role role = roleRepository.findByName(userDto.getNewRole());
+
+        if (user == null || role == null) {
+            return null;
+        }
 
         UserDTO returnDTO = new UserDTO();
-        option.ifPresent((user) -> {
-            try { // check if role exists && check if user has role
-                Role role = roleRepository.findByName(userDto.getNewRole());
-                if (user.getRoles().contains(role)) {
-                    user.getRoles().remove(role);
-                    userRepository.save(user);
+        if (user.getRoles().contains(role)) {
+            user.getRoles().remove(role);
+            userRepository.save(user);
 
-                    returnDTO.setEmail(user.getEmail());
-                    returnDTO.setFullname(user.getFullname());
-                    returnDTO.setUsername(user.getUserName());
-
-                    returnDTO.setRoles(
-                            user.getRoles()
-                                    .stream()
-                                    .map(userRole -> new RoleDTO(userRole.getName()))
-                                    .collect(Collectors.toList()));
-                } else {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "User does not have this role");
-                }
-            } catch (Exception e) {
-                // TODO: handle exception
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "No such role");
-            }
-        });
+            returnDTO.setEmail(user.getEmail());
+            returnDTO.setFullname(user.getFullname());
+            returnDTO.setUsername(user.getUserName());
+            returnDTO.setRoles(
+                    user.getRoles()
+                            .stream()
+                            .map(userRole -> new RoleDTO(userRole.getName()))
+                            .collect(Collectors.toList()));
+        } else {
+            return null;
+        }
 
         return returnDTO;
     }
