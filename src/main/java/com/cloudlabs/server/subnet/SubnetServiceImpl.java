@@ -102,7 +102,6 @@ public class SubnetServiceImpl implements SubnetService {
                     .addSourceRanges(ipv4Range)
                     .addDestinationRanges(ipv4Range)
                     .setNetwork(network.getSelfLink())
-                    .addSourceServiceAccounts("678591755363-compute@developer.gserviceaccount.com")
                     .setDescription("Allowing communication in subnets")
                     .build();
 
