@@ -149,6 +149,9 @@ public class ImageServiceImpl implements ImageService {
      * A unique buildId is returned, which can be used for more operations on the
      * build, such as quering information on the build, or cancelling the build.
      *
+     * DEPRECATED: Cloud Function is used to start virtual disk build on Cloud
+     * Storage Trigger when file is uploaded successfully
+     *
      * @param objectName
      * @param imageName
      * @return buildId
@@ -185,6 +188,20 @@ public class ImageServiceImpl implements ImageService {
                     .setName("gcr.io/compute-image-tools/gce_vm_image_import:release")
                     .addEnv("BUILD_ID=$BUILD_ID")
                     .build();
+
+            // Use addAllArgs instead
+            // BuildStep buildStep = BuildStep.newBuilder()
+            // .setName("gcr.io/compute-image-tools/gce_vm_image_import:release")
+            // .addAllArgs(Arrays.asList(
+            // new String[] { "-image_name", imageName, "-source_file",
+            // String.format("gs://%s/%s", event.getBucket(),
+            // event.getName()),
+            // "-timeout", "7000s", "-client_id", "api", "-os",
+            // operatingSystem }))
+            // .addArgs(
+            // String.format("os=%s", operatingSystem)) // --os=debian-11
+            // .addEnv("BUILD_ID=$BUILD_ID")
+            // .build();
 
             com.google.protobuf.Duration duration = com.google.protobuf.Duration.newBuilder().setSeconds(7200).build();
 
