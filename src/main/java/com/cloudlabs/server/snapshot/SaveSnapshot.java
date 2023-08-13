@@ -27,12 +27,18 @@ public class SaveSnapshot {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
+    //@ManyToOne
+    //@JoinColumn(name = "compute_id", referencedColumnName = "id", nullable = false)
+    @Column
+    private String instanceName;
+
     public SaveSnapshot() {}
 
-    public SaveSnapshot(String snapshotName, String description, User user) {
+    public SaveSnapshot(String snapshotName, String description, User user, String instanceName) {
         this.snapshotName = snapshotName;
         this.description = description;
         this.user = user;
+        this.instanceName = instanceName;
     }
 
     public String getSnapshotName() {
@@ -57,6 +63,14 @@ public class SaveSnapshot {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getInstanceName() {
+        return this.instanceName;
+    }
+
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
     }
 
 }

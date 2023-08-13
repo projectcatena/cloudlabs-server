@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -39,6 +40,9 @@ public class AdminControllerTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private RoleRepository roleRepository;
 
     @Autowired
@@ -46,27 +50,26 @@ public class AdminControllerTest {
 
     @BeforeAll
     void setup() throws Exception {
-        User user = userRepository.findByEmail("administrator@gmail.com").orElse(null);
-            if (user == null) {
-                Role adminRole = roleRepository.findByName(RoleType.ADMIN);
-                Role tutorRole = null;
-                Role userRole = null;
-                if (adminRole == null) {
-                    adminRole = new Role(RoleType.ADMIN);
-                    tutorRole = new Role(RoleType.TUTOR);
-                    userRole = new Role(RoleType.USER);
-                }
-                Set<Role> roles = new HashSet<>(Arrays.asList(adminRole, tutorRole, userRole));
-                user = new User("Bobby", "administrator", "administrator@gmail.com", "Pa$$w0rd");
-                userRepository.save(user);
-                user.setRoles(roles);
-                userRepository.save(user);
-            }
+        Role adminRole = roleRepository.findByName(RoleType.ADMIN);
+        Role tutorRole = roleRepository.findByName(RoleType.TUTOR);
+        if (adminRole == null) {
+            adminRole = new Role(RoleType.ADMIN);
+        }
+        else if (tutorRole == null) {
+            tutorRole = new Role(RoleType.TUTOR);
+
+        }
+        Set<Role> roles = new HashSet<>(Arrays.asList(adminRole, tutorRole));
+        User user = new User("Bobby", "administrator", "administrator@gmail.com", passwordEncoder.encode("Pa$$w0rd"));
+        userRepository.save(user);
+        user.setRoles(roles);
+        userRepository.save(user);
     }
 
     @AfterAll
     void teardown() throws Exception {
         userRepository.deleteByEmail("administrator@gmail.com");
+        roleRepository.deleteAll();
     }
 
     @Test
@@ -79,7 +82,7 @@ public class AdminControllerTest {
     void addRole() throws Exception {
         UserDTO requestDTO = new UserDTO();
         requestDTO.setEmail("administrator@gmail.com");
-        requestDTO.setNewRole("tutor");
+        requestDTO.setNewRole("user");
 
         String jsonString = objectMapper.writeValueAsString(requestDTO);
 

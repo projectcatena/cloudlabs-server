@@ -1,26 +1,28 @@
 package com.cloudlabs.server.image.dto;
 
-import java.time.Instant;
-
 import com.cloudlabs.server.image.enums.ImageStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.time.Instant;
 
 @JsonInclude(Include.NON_NULL) // Ignore null fields on controller response
 public class ImageDTO {
     private String objectName;
     private long imageId;
     private String imageName;
+    private String operatingSystem;
     /**
-     * The status of the image. An image can be used to create other resources, 
-     * such as instances, only after the image has been successfully created 
-     * and the status is set to READY. Possible values are FAILED, PENDING, or READY.
+     * The status of the image. An image can be used to create other resources,
+     * such as instances, only after the image has been successfully created
+     * and the status is set to READY. Possible values are FAILED, PENDING, or
+     * READY.
      */
     private ImageStatus imageStatus;
     private String signedURL;
     private Instant creationTimestamp;
 
-    public ImageDTO() {}
+    public ImageDTO() {
+    }
 
     public long getImageId() {
         return this.imageId;
@@ -70,4 +72,11 @@ public class ImageDTO {
         this.creationTimestamp = creationTimestamp;
     }
 
+    public String getOperatingSystem() {
+        return operatingSystem;
+    }
+
+    public void setOperatingSystem(String operatingSystem) {
+        this.operatingSystem = operatingSystem;
+    }
 }

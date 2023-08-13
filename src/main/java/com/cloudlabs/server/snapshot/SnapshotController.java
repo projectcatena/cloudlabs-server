@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,30 +36,33 @@ public class SnapshotController {
     public SaveSnapshotDTO createSnapshot(
         @RequestBody SaveSnapshotDTO saveSnapshotDTO
     ) throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        SaveSnapshotDTO result = snapshotService.createSnapshot(saveSnapshotDTO.getSnapshotName(),
-        saveSnapshotDTO.getInstanceName(),
-        saveSnapshotDTO.getDescription());
+        SaveSnapshotDTO result = snapshotService.createSnapshot(saveSnapshotDTO);
         if (result == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         return result;
     }
 
     @DeleteMapping(path = "delete")
     @PreAuthorize("hasAnyRole('USER','TUTOR','ADMIN')")
-    public String deleteSnapshot(
+    public SaveSnapshotDTO deleteSnapshot(
         @RequestBody SaveSnapshotDTO saveSnapshotDTO) throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        SaveSnapshotDTO result = snapshotService.deleteSnapshot(saveSnapshotDTO.getSnapshotName());
+        SaveSnapshotDTO result = snapshotService.deleteSnapshot(saveSnapshotDTO);
         if (result == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        return "snapshot deleted";
+        return result;
     }
 
-    @GetMapping(path = "list")
+    @PostMapping(path = "list")
     @PreAuthorize("hasAnyRole('USER','TUTOR','ADMIN')")
-    public List<SaveSnapshotDTO> listSnapshots() throws IOException {
-        return snapshotService.listSnapshots();
+    public List<SaveSnapshotDTO> listSnapshots(@RequestBody SaveSnapshotDTO saveSnapshotDTO) throws IOException {
+        System.out.println("snapshotlist");
+        List<SaveSnapshotDTO> snapshots = snapshotService.listSnapshots(saveSnapshotDTO);
+        if (snapshots == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        return snapshots;
     }
 
     /*
@@ -80,8 +82,7 @@ public class SnapshotController {
         @RequestBody SaveSnapshotDTO  saveSnapshotDTO
     ) throws InterruptedException, ExecutionException, TimeoutException,IOException {
         
-        ComputeDTO result = snapshotService.createFromSnapshot(saveSnapshotDTO.getInstanceName(),
-        saveSnapshotDTO.getSnapshotName());
+        ComputeDTO result = snapshotService.createFromSnapshot(saveSnapshotDTO);
         if (result == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
