@@ -39,7 +39,7 @@ public class SubnetServiceImpl implements SubnetService {
     @Value("${gcp.project.region}")
     private String region;
 
-    @Value("${gcp.project.network}")
+    @Value("${gcp.project.vpc}")
     private String networkName;
 
     @Autowired
