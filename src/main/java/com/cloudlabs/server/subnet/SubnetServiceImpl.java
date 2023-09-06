@@ -27,13 +27,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SubnetServiceImpl implements SubnetService {
-    static String project = "cloudlabs-387310";
-    static String region = "asia-southeast1";
-    static String networkName = "cloudlabs-staging";
+
+    @Value("${gcp.project.id}")
+    private String project;
+
+    @Value("${gcp.project.region}")
+    private String region;
+
+    @Value("${gcp.project.network}")
+    private String networkName;
 
     @Autowired
     SubnetRepository subnetRepository;
